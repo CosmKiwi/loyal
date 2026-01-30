@@ -35,6 +35,12 @@
         <button class="btn back-btn" onclick="closeDetail()">Back</button>
     </div>
 
+    <div id="settings" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
+        <h3>App Settings</h3>
+        <button id="installBtn" class="btn" style="display:none; background: #28a745;">Install to Home Screen</button>
+        <p id="installStatus"><small>App is ready for offline use.</small></p>
+    </div>
+    
     <script>
         let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 
@@ -113,12 +119,6 @@
             }
         });
     </script>
-
-    <div id="settings" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
-        <h3>App Settings</h3>
-        <button id="installBtn" class="btn" style="display:none; background: #28a745;">Install to Home Screen</button>
-        <p id="installStatus"><small>App is ready for offline use.</small></p>
-    </div>
 
     <script>
     if ('serviceWorker' in navigator) {
