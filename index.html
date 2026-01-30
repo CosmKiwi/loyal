@@ -40,7 +40,7 @@
         <button id="installBtn" class="btn" style="display:none; background: #28a745;">Install to Home Screen</button>
         <p id="installStatus"><small>App is ready for offline use.</small></p>
     </div>
-    
+
     <script>
         let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 
@@ -100,23 +100,50 @@
         renderList();
 
         let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        // Check if the app is already being run as a PWA
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('installStatus').innerText = "App is installed and ready.";
+            installBtn.style.display = 'none';
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('✅ beforeinstallprompt fired');
+            // Prevent the default mini-bar
             e.preventDefault();
+            // Stash the event
             deferredPrompt = e;
-            // Only show the install button if the user hasn't installed it yet
-            document.getElementById('installBtn').style.display = 'inline-block';
+            // Show our button
+            installBtn.style.display = 'inline-block';
         });
 
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    document.getElementById('installBtn').style.display = 'none';
-                }
-                deferredPrompt = null;
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                alert("The app isn't quite ready to install yet. Please wait a few seconds or try refreshing.");
+                return;
             }
+            
+            // Show the browser's install dialog
+            deferredPrompt.prompt();
+            
+            // Wait for the user's choice
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User choice: ${outcome}`);
+            
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none';
+                document.getElementById('installStatus').innerText = "Installing...";
+            }
+            
+            deferredPrompt = null;
+        });
+
+        // Listen for successful installation
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('🚀 App was successfully installed');
+            installBtn.style.display = 'none';
+            document.getElementById('installStatus').innerText = "App installed!";
         });
     </script>
 
