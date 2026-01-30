@@ -2,7 +2,7 @@
   "name": "Loyal",
   "short_name": "Loyal",
   "start_url": "./index.html",
-  "scope": "./"
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
