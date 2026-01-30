@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#007bff">    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="loyal_192.png">
+    <link rel="apple-touch-icon" href="loyal_192.png">
+    <title>Loyal</title>
+    <script src="JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
+        .card { background: white; margin: 10px 0; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        #detailView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; flex-direction: column; justify-content: center; align-items: center; }
+        svg { max-width: 90%; height: auto; margin-top: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .back-btn { margin-top: 40px; background: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>My Cards</h2>
+    <div id="cardList"></div>
+    <hr>
+    <h3>Add New Card</h3>
+    <input type="text" id="store_name" placeholder="Store Name">
+    <input type="text" id="barcode_number" placeholder="Barcode Number">
+    <input type="text" id="customer_number" placeholder="Customer Number">
+    <button class="btn" onclick="saveCard()">Save Card</button>
+
+    <div id="detailView">
+        <h1 id="detailName"></h1>
+        <svg id="barcode"></svg>
+        <button class="btn back-btn" onclick="closeDetail()">Back</button>
+    </div>
+
+    <script>
+        let cards = JSON.parse(localStorage.getItem('cards') || '[]');
+
+        function renderList() {
+            const list = document.getElementById('cardList');
+            list.innerHTML = cards.map((c, i) => `
+                <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 15px;">
+                    <div onclick="showCard(${i})" style="flex-grow: 1; text-align: left;">
+                        <strong>${c.store_name}</strong><br>
+                        <small>Barcode: ${c.barcode_number}</small><br>
+                        <small>Cust No: ${c.customer_number}</small>
+                    </div>
+                    <button onclick="deleteCard(${i})" style="background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 10px;">
+                        Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function deleteCard(index) {
+            if (confirm("Delete this card?")) {
+                cards.splice(index, 1); // Remove the item from the array
+                localStorage.setItem('cards', JSON.stringify(cards)); // Update local storage
+                renderList(); // Refresh the UI
+            }
+        }
+        function saveCard() {
+            const store_name = document.getElementById('store_name').value;
+            const barcode_number = document.getElementById('barcode_number').value;
+            const customer_number = document.getElementById('customer_number').value;
+            if(!store_name || !barcode_number) return alert("Need store name and barcode number");
+            cards.push({ store_name, barcode_number, customer_number });
+            localStorage.setItem('cards', JSON.stringify(cards));
+            renderList();
+        }
+
+        function showCard(index) {
+            const card = cards[index];
+            document.getElementById('detailName').innerText = card.store_name;
+            document.getElementById('detailView').style.display = 'flex';
+            
+            // Optimized for New World (EAN-13)
+            JsBarcode("#barcode", card.barcode_number, {
+                format: "EAN13", // Changed from CODE128
+                width: 2.5,      // Slightly wider for easier scanning
+                height: 120,     // Taller bars are easier to align
+                displayValue: true, 
+                fontSize: 20,
+                margin: 20       // Guaranteed Quiet Zone
+            });
+        }
+
+        function closeDetail() {
+            document.getElementById('detailView').style.display = 'none';
+        }
+
+        renderList();
+    </script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker registered!'))
+            .catch(err => console.log('Registration failed:', err));
+        });
+    }
+    </script>
+</body>
+</html>

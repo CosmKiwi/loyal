@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Bun specific
+.bun-build/
+*.bun
+
+# Local Environment
+.env
+.env*.local
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Editor Specific
+.vscode/
+.idea/
+*.swp
+*.swo
