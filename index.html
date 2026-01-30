@@ -92,7 +92,33 @@
         }
 
         renderList();
+
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Only show the install button if the user hasn't installed it yet
+            document.getElementById('installBtn').style.display = 'inline-block';
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('installBtn').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
     </script>
+
+    <div id="settings" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
+        <h3>App Settings</h3>
+        <button id="installBtn" class="btn" style="display:none; background: #28a745;">Install to Home Screen</button>
+        <p id="installStatus"><small>App is ready for offline use.</small></p>
+    </div>
 
     <script>
     if ('serviceWorker' in navigator) {

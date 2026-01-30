@@ -3,7 +3,9 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'
+  './JsBarcode.all.min.js',
+  './loyal_192.png',
+  './loyal_512.png'
 ];
 
 // Install: Save assets to cache
