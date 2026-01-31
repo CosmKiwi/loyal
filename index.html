@@ -9,152 +9,169 @@
     <link rel="apple-touch-icon" href="loyal_192.png">
     <title>Loyal</title>
     <script src="JsBarcode.all.min.js"></script>
+    <script src="surreal.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
-        .card { background: white; margin: 10px 0; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
-        #detailView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; flex-direction: column; justify-content: center; align-items: center; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; margin: 0; }
+        .card { background: white; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; overflow: hidden; padding: 5px; }
+        .card-content { padding: 10px 15px; flex-grow: 1; text-align: left; cursor: pointer; }
+        #detailView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         svg { max-width: 90%; height: auto; margin-top: 20px; }
-        .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .back-btn { margin-top: 40px; background: #666; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
+        
+        /* Fully rounded delete button with margin */
+        .delete-btn { 
+            background: #ff4444; 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            cursor: pointer; 
+            font-weight: bold;
+            border-radius: 8px; /* Rounded on all sides */
+            margin-right: 10px; /* Spacing from the edge */
+            margin-left: 10px;  /* Spacing from the text */
+        }
+
+        .flex { display: flex !important; }
+        input { padding: 12px; margin: 5px; border-radius: 6px; border: 1px solid #ddd; width: 85%; max-width: 300px; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        .secondary-btn { background: #6c757d; font-size: 0.9em; padding: 10px 18px; }
+        hr { border: 0; height: 1px; background: #ddd; margin: 20px 0; }
     </style>
 </head>
 <body>
 
     <h2>My Cards</h2>
     <div id="cardList"></div>
+    
     <hr>
+    
     <h3>Add New Card</h3>
     <input type="text" id="store_name" placeholder="Store Name">
     <input type="text" id="barcode_number" placeholder="Barcode Number">
     <input type="text" id="customer_number" placeholder="Customer Number">
-    <button class="btn" onclick="saveCard()">Save Card</button>
+    <button class="btn" id="saveBtn">Save Card</button>
 
     <div id="detailView">
         <h1 id="detailName"></h1>
         <svg id="barcode"></svg>
-        <button class="btn back-btn" onclick="closeDetail()">Back</button>
+        <button class="btn" style="background:#666" id="closeBtn">Back</button>
     </div>
 
-    <div id="settings" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
-        <h3>App Settings</h3>
-        <button id="installBtn" class="btn" style="display:none; background: #28a745;">Install to Home Screen</button>
-        <p id="installStatus"><small>App is ready for offline use.</small></p>
+    <div id="settings" style="margin-top: 40px; padding-top: 20px;">
+        <button class="btn secondary-btn" id="backupBtn">Backup to File</button>
+        <button class="btn secondary-btn" style="background:#17a2b8" id="restoreBtn">Restore from File</button>
+        <input type="file" id="restoreFile" style="display:none">
+        
+        <div style="margin-top: 20px; color: #888; font-size: 0.8em;">
+            App Version: <span id="version-display">v0.1.1</span>
+        </div>
     </div>
 
     <script>
-        let cards = JSON.parse(localStorage.getItem('cards') || '[]');
+        var cards = JSON.parse(localStorage.getItem('cards') || '[]');
 
-        function renderList() {
-            const list = document.getElementById('cardList');
-            list.innerHTML = cards.map((c, i) => `
-                <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 15px;">
-                    <div onclick="showCard(${i})" style="flex-grow: 1; text-align: left;">
-                        <strong>${c.store_name}</strong><br>
-                        <small>Barcode: ${c.barcode_number}</small><br>
-                        <small>Cust No: ${c.customer_number}</small>
-                    </div>
-                    <button onclick="deleteCard(${i})" style="background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 10px;">
-                        Delete
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function deleteCard(index) {
-            if (confirm("Delete this card?")) {
-                cards.splice(index, 1); // Remove the item from the array
-                localStorage.setItem('cards', JSON.stringify(cards)); // Update local storage
-                renderList(); // Refresh the UI
+        function initLoyal() {
+            if (typeof me === 'undefined') {
+                setTimeout(initLoyal, 10);
+                return;
             }
-        }
-        function saveCard() {
-            const store_name = document.getElementById('store_name').value;
-            const barcode_number = document.getElementById('barcode_number').value;
-            const customer_number = document.getElementById('customer_number').value;
-            if(!store_name || !barcode_number) return alert("Need store name and barcode number");
-            cards.push({ store_name, barcode_number, customer_number });
-            localStorage.setItem('cards', JSON.stringify(cards));
+
+            const renderList = () => {
+                const list = me("#cardList");
+                if (cards.length === 0) {
+                    list.innerHTML = "<p style='color:#888'>No cards saved yet.</p>";
+                    return;
+                }
+
+                list.innerHTML = cards.map((c, i) => `
+                    <div class="card">
+                        <div class="card-content" data-index="${i}">
+                            <strong>${c.store_name}</strong><br>
+                            <small>${c.barcode_number}</small>
+                        </div>
+                        <button class="delete-btn" data-index="${i}">Delete</button>
+                    </div>
+                `).join('');
+
+                any(".card-content").on("click", e => showCard(me(e).attribute("data-index")));
+                any(".delete-btn").on("click", e => deleteCard(me(e).attribute("data-index")));
+            };
+
+            const deleteCard = (index) => {
+                if (confirm("Delete this card?")) {
+                    cards.splice(index, 1);
+                    localStorage.setItem('cards', JSON.stringify(cards));
+                    renderList();
+                }
+            };
+
+            const showCard = (index) => {
+                const card = cards[index];
+                me("#detailName").innerText = card.store_name;
+                me("#detailView").classAdd("flex");
+                JsBarcode("#barcode", card.barcode_number, { 
+                    format: "EAN13", 
+                    width: 2.5, 
+                    height: 120,
+                    displayValue: true
+                });
+            };
+
+            me("#saveBtn").on("click", () => {
+                const sn = me("#store_name").value;
+                const bn = me("#barcode_number").value;
+                if(!sn || !bn) return alert("Please enter Store Name and Barcode");
+                
+                cards.push({ 
+                    store_name: sn, 
+                    barcode_number: bn, 
+                    customer_number: me("#customer_number").value 
+                });
+                localStorage.setItem('cards', JSON.stringify(cards));
+                
+                any("input").run(el => el.value = "");
+                renderList();
+            });
+
+            me("#closeBtn").on("click", () => me("#detailView").classRemove("flex"));
+
+            me("#backupBtn").on("click", () => {
+                const date = new Date().toISOString().split('T')[0];
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
+                const dlAnchor = document.createElement('a');
+                dlAnchor.setAttribute("href", dataStr);
+                dlAnchor.setAttribute("download", `loyal_backup_${date}.json`);
+                dlAnchor.click();
+            });
+
+            me("#restoreBtn").on("click", () => me("#restoreFile").click());
+            me("#restoreFile").on("change", (e) => {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const imported = JSON.parse(evt.target.result);
+                        if (confirm(`Import ${imported.length} cards?`)) {
+                            cards = imported;
+                            localStorage.setItem('cards', JSON.stringify(cards));
+                            renderList();
+                        }
+                    } catch (err) { alert("Invalid backup file."); }
+                };
+                reader.readAsText(e.target.files[0]);
+            });
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data.version) me('#version-display').innerText = "v" + event.data.version;
+                });
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({action: 'getVersion'});
+                }
+            }
+
             renderList();
         }
 
-        function showCard(index) {
-            const card = cards[index];
-            document.getElementById('detailName').innerText = card.store_name;
-            document.getElementById('detailView').style.display = 'flex';
-            
-            // Optimized for New World (EAN-13)
-            JsBarcode("#barcode", card.barcode_number, {
-                format: "EAN13", // Changed from CODE128
-                width: 2.5,      // Slightly wider for easier scanning
-                height: 120,     // Taller bars are easier to align
-                displayValue: true, 
-                fontSize: 20,
-                margin: 20       // Guaranteed Quiet Zone
-            });
-        }
-
-        function closeDetail() {
-            document.getElementById('detailView').style.display = 'none';
-        }
-
-        renderList();
-
-        let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
-
-        // Check if the app is already being run as a PWA
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            document.getElementById('installStatus').innerText = "App is installed and ready.";
-            installBtn.style.display = 'none';
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('✅ beforeinstallprompt fired');
-            // Prevent the default mini-bar
-            e.preventDefault();
-            // Stash the event
-            deferredPrompt = e;
-            // Show our button
-            installBtn.style.display = 'inline-block';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) {
-                alert("The app isn't quite ready to install yet. Please wait a few seconds or try refreshing.");
-                return;
-            }
-            
-            // Show the browser's install dialog
-            deferredPrompt.prompt();
-            
-            // Wait for the user's choice
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User choice: ${outcome}`);
-            
-            if (outcome === 'accepted') {
-                installBtn.style.display = 'none';
-                document.getElementById('installStatus').innerText = "Installing...";
-            }
-            
-            deferredPrompt = null;
-        });
-
-        // Listen for successful installation
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('🚀 App was successfully installed');
-            installBtn.style.display = 'none';
-            document.getElementById('installStatus').innerText = "App installed!";
-        });
-    </script>
-
-    <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker registered!'))
-            .catch(err => console.log('Registration failed:', err));
-        });
-    }
+        window.addEventListener('load', initLoyal);
     </script>
 </body>
 </html>
