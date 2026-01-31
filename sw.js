@@ -1,5 +1,5 @@
 const APP_PREFIX = 'loyal-';
-const VERSION = 'v0.1.3'; 
+const VERSION = 'v0.1.4'; 
 const CACHE_NAME = APP_PREFIX + VERSION;
 
 const ASSETS = [
@@ -7,6 +7,7 @@ const ASSETS = [
   './index.html',
   './manifest.json',
   './JsBarcode.all.min.js',
+  './qrcode.min.js',
   './surreal.min.js',
   './loyal_192.png',
   './loyal_512.png'

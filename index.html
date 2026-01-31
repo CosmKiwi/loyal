@@ -9,29 +9,22 @@
     <link rel="apple-touch-icon" href="loyal_192.png">
     <title>Loyal</title>
     <script src="JsBarcode.all.min.js"></script>
+    <script src="qrcode.min.js"></script>
     <script src="surreal.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; margin: 0; }
         .card { background: white; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; overflow: hidden; padding: 5px; }
         .card-content { padding: 10px 15px; flex-grow: 1; text-align: left; cursor: pointer; }
         #detailView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        svg { max-width: 90%; height: auto; margin-top: 20px; }
-        .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
         
-        /* Fully rounded delete button with margin */
-        .delete-btn { 
-            background: #ff4444; 
-            color: white; 
-            border: none; 
-            padding: 10px 16px; 
-            cursor: pointer; 
-            font-weight: bold;
-            border-radius: 8px; /* Rounded on all sides */
-            margin-right: 10px; /* Spacing from the edge */
-            margin-left: 10px;  /* Spacing from the text */
-        }
+        /* Ensure QR and Barcode containers are sized correctly */
+        #barcode, #qrcode { margin-top: 20px; max-width: 90%; }
+        #qrcode img { margin: 0 auto; } /* Center the generated QR image */
 
+        .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
+        .delete-btn { background: #ff4444; color: white; border: none; padding: 10px 16px; cursor: pointer; font-weight: bold; border-radius: 8px; margin-right: 10px; margin-left: 10px; }
         .flex { display: flex !important; }
+        .hidden { display: none !important; }
         input { padding: 12px; margin: 5px; border-radius: 6px; border: 1px solid #ddd; width: 85%; max-width: 300px; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         .secondary-btn { background: #6c757d; font-size: 0.9em; padding: 10px 18px; }
         hr { border: 0; height: 1px; background: #ddd; margin: 20px 0; }
@@ -52,8 +45,16 @@
 
     <div id="detailView">
         <h1 id="detailName"></h1>
+        <select id="formatSelector" style="padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <option value="CODE128">Code 128 (Standard)</option>
+            <option value="EAN13">EAN-13 (Supermarkets)</option>
+            <option value="UPC">UPC (12 digits)</option>
+            <option value="QR">QR Code</option>
+        </select>
         <svg id="barcode"></svg>
-        <button class="btn" style="background:#666" id="closeBtn">Back</button>
+        <div id="qrcode"></div>
+        
+        <button class="btn" style="background:#666; margin-top: 30px;" id="closeBtn">Back</button>
     </div>
 
     <div id="settings" style="margin-top: 40px; padding-top: 20px;">
@@ -68,6 +69,7 @@
 
     <script>
         var cards = JSON.parse(localStorage.getItem('cards') || '[]');
+        var qrInstance = null; // Global instance for QRCode
 
         if ('serviceWorker' in navigator) {
             // 1. Detect when a new service worker takes over
@@ -140,19 +142,60 @@
                 }
             };
 
-            const showCard = (i) => {
-                const card = cards[i];
+            let currentCardIndex = null;
+
+            const showCard = (index) => {
+                currentCardIndex = index;
+                const card = cards[index];
                 me("#detailName").innerText = card.store_name;
                 me("#detailView").classAdd("flex");
-                JsBarcode("#barcode", card.barcode_number, { 
-                    format: "EAN13", width: 2.5, height: 120, displayValue: true 
-                });
+                me("#formatSelector").value = card.format || "CODE128";
+                renderCode(card.barcode_number, me("#formatSelector").value);
             };
+
+            const renderCode = (number, format) => {
+                // Toggle visibility using Surreal
+                me("#barcode").classAdd("hidden");
+                me("#qrcode").classAdd("hidden");
+                me("#qrcode").innerHTML = ""; // Clear previous QR canvas/img
+
+                if (format === "QR") {
+                    me("#qrcode").classRemove("hidden");
+                    // Surreal me() passes the raw DOM node to the QRCode constructor
+                    new QRCode(me("#qrcode"), {
+                        text: number,
+                        width: 200,
+                        height: 200,
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } else {
+                    me("#barcode").classRemove("hidden");
+                    try {
+                        JsBarcode("#barcode", number, { 
+                            format: format, 
+                            width: 2, 
+                            height: 100, 
+                            displayValue: true 
+                        });
+                    } catch (e) { 
+                        console.error("Barcode rendering failed", e); 
+                    }
+                }
+            };
+
+            // Listen for dropdown changes
+            me("#formatSelector").on("change", (e) => {
+                const newFormat = e.target.value;
+                const card = cards[currentCardIndex];
+                card.format = newFormat;
+                localStorage.setItem('cards', JSON.stringify(cards));
+                renderCode(card.barcode_number, newFormat);
+            });
 
             me("#saveBtn").on("click", () => {
                 const sn = me("#store_name").value, bn = me("#barcode_number").value;
                 if(!sn || !bn) return alert("Enter Store Name and Barcode");
-                cards.push({ store_name: sn, barcode_number: bn, customer_number: me("#customer_number").value });
+                cards.push({ store_name: sn, barcode_number: bn, customer_number: me("#customer_number").value, format: "CODE128" });
                 localStorage.setItem('cards', JSON.stringify(cards));
                 any("input").run(el => el.value = "");
                 renderList();
@@ -171,12 +214,9 @@
             me("#restoreFile").on("change", (e) => {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
-                    const imported = JSON.parse(evt.target.result);
-                    if (confirm(`Import ${imported.length} cards?`)) {
-                        cards = imported;
-                        localStorage.setItem('cards', JSON.stringify(cards));
-                        renderList();
-                    }
+                    cards = JSON.parse(evt.target.result);
+                    localStorage.setItem('cards', JSON.stringify(cards));
+                    renderList();
                 };
                 reader.readAsText(e.target.files[0]);
             });
