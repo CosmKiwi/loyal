@@ -1,5 +1,5 @@
-const APP_PREFIX = 'loyal-'; // Unique to this app
-const VERSION = 'v0.1.2';
+const APP_PREFIX = 'loyal-';
+const VERSION = 'v0.1.3'; 
 const CACHE_NAME = APP_PREFIX + VERSION;
 
 const ASSETS = [
@@ -12,47 +12,29 @@ const ASSETS = [
   './loyal_512.png'
 ];
 
-// Install: Save assets to cache and activate immediately
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); 
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-});
-
-// Install: Save assets to cache
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-});
-
-// Fetch: Serve from cache first, then network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache.startsWith(APP_PREFIX) && cache !== CACHE_NAME) {
-            console.log('Cleaning up old Loyal cache:', cache);
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Clean up old versions of the cache
+      caches.keys().then((keys) => Promise.all(
+        keys.map((k) => (k.startsWith(APP_PREFIX) && k !== CACHE_NAME) ? caches.delete(k) : null)
+      )),
+      self.clients.claim()
+    ])
   );
 });
 
-self.addEventListener('message', (event) => {
-  if (event.data.action === 'getVersion') {
-    event.source.postMessage({
-      version: VERSION
-    });
-  }
+self.addEventListener('fetch', (e) => {
+  e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data.action === 'getVersion') e.source.postMessage({ version: VERSION });
 });

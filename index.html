@@ -62,31 +62,55 @@
         <input type="file" id="restoreFile" style="display:none">
         
         <div style="margin-top: 20px; color: #888; font-size: 0.8em;">
-            App Version: <span id="version-display">v0.1.1</span>
+            App Version: <span id="version-display">Detecting...</span>
         </div>
     </div>
 
     <script>
+        var cards = JSON.parse(localStorage.getItem('cards') || '[]');
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(reg => {
-                reg.onupdatefound = () => {
-                    const newWorker = reg.installing;
-                    newWorker.onstatechange = () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if (confirm("New version available! Update?")) window.location.reload();
+            // 1. Detect when a new service worker takes over
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log("New controller found, reloading...");
+                window.location.reload(); 
+            });
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    // Check for updates
+                    reg.onupdatefound = () => {
+                        const newWorker = reg.installing;
+                        if (newWorker) {
+                            newWorker.onstatechange = () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // This triggers the 'controllerchange' event above
+                                    if (confirm("New version ready! Update now?")) {
+                                        newWorker.postMessage({ action: 'skipWaiting' });
+                                    }
+                                }
+                            };
                         }
                     };
-                };
+                    
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({action: 'getVersion'});
+                    }
+                });
+            });
+
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.version) {
+                    // Using Surreal to update the text
+                    const display = me('#version-display');
+                    if (display) display.innerText = event.data.version;
+                }
             });
         }
 
-        var cards = JSON.parse(localStorage.getItem('cards') || '[]');
-
+        // 2. App Logic (Runs after Surreal is ready)
         function initLoyal() {
-            if (typeof me === 'undefined') {
-                setTimeout(initLoyal, 10);
-                return;
-            }
+            if (typeof me === 'undefined') { return setTimeout(initLoyal, 10); }
 
             const renderList = () => {
                 const list = me("#cardList");
@@ -94,7 +118,6 @@
                     list.innerHTML = "<p style='color:#888'>No cards saved yet.</p>";
                     return;
                 }
-
                 list.innerHTML = cards.map((c, i) => `
                     <div class="card">
                         <div class="card-content" data-index="${i}">
@@ -109,81 +132,58 @@
                 any(".delete-btn").on("click", e => deleteCard(me(e).attribute("data-index")));
             };
 
-            const deleteCard = (index) => {
+            const deleteCard = (i) => {
                 if (confirm("Delete this card?")) {
-                    cards.splice(index, 1);
+                    cards.splice(i, 1);
                     localStorage.setItem('cards', JSON.stringify(cards));
                     renderList();
                 }
             };
 
-            const showCard = (index) => {
-                const card = cards[index];
+            const showCard = (i) => {
+                const card = cards[i];
                 me("#detailName").innerText = card.store_name;
                 me("#detailView").classAdd("flex");
                 JsBarcode("#barcode", card.barcode_number, { 
-                    format: "EAN13", 
-                    width: 2.5, 
-                    height: 120,
-                    displayValue: true
+                    format: "EAN13", width: 2.5, height: 120, displayValue: true 
                 });
             };
 
             me("#saveBtn").on("click", () => {
-                const sn = me("#store_name").value;
-                const bn = me("#barcode_number").value;
-                if(!sn || !bn) return alert("Please enter Store Name and Barcode");
-                
-                cards.push({ 
-                    store_name: sn, 
-                    barcode_number: bn, 
-                    customer_number: me("#customer_number").value 
-                });
+                const sn = me("#store_name").value, bn = me("#barcode_number").value;
+                if(!sn || !bn) return alert("Enter Store Name and Barcode");
+                cards.push({ store_name: sn, barcode_number: bn, customer_number: me("#customer_number").value });
                 localStorage.setItem('cards', JSON.stringify(cards));
-                
                 any("input").run(el => el.value = "");
                 renderList();
             });
 
             me("#closeBtn").on("click", () => me("#detailView").classRemove("flex"));
-
             me("#backupBtn").on("click", () => {
                 const date = new Date().toISOString().split('T')[0];
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
-                const dlAnchor = document.createElement('a');
-                dlAnchor.setAttribute("href", dataStr);
-                dlAnchor.setAttribute("download", `loyal_backup_${date}.json`);
-                dlAnchor.click();
+                const dl = document.createElement('a');
+                dl.setAttribute("href", dataStr);
+                dl.setAttribute("download", `loyal_backup_${date}.json`);
+                dl.click();
             });
-
             me("#restoreBtn").on("click", () => me("#restoreFile").click());
             me("#restoreFile").on("change", (e) => {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
-                    try {
-                        const imported = JSON.parse(evt.target.result);
-                        if (confirm(`Import ${imported.length} cards?`)) {
-                            cards = imported;
-                            localStorage.setItem('cards', JSON.stringify(cards));
-                            renderList();
-                        }
-                    } catch (err) { alert("Invalid backup file."); }
+                    const imported = JSON.parse(evt.target.result);
+                    if (confirm(`Import ${imported.length} cards?`)) {
+                        cards = imported;
+                        localStorage.setItem('cards', JSON.stringify(cards));
+                        renderList();
+                    }
                 };
                 reader.readAsText(e.target.files[0]);
             });
 
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.addEventListener('message', (event) => {
-                    if (event.data.version) me('#version-display').innerText = "v" + event.data.version;
-                });
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({action: 'getVersion'});
-                }
-            }
-
             renderList();
         }
-
+        
         window.addEventListener('load', initLoyal);
     </script>
 </body>
