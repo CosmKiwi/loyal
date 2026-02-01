@@ -3,6 +3,11 @@
 
 A ultra-minimalist, privacy-first Progressive Web App (PWA) to replace bloated loyalty apps. No tracking, no accounts, no cloud—just your barcodes stored locally on your device.
 
+## 🚀 Getting Started
+1. Open the [Live Link](https://cosmkiwi.github.io/loyal/) in your mobile browser.
+2. Add your store cards (Name, Barcode, and Customer Number).
+3. Tap **"Install App"** or **"Add to Home Screen"** in your browser menu.
+
 ## ✨ Features
 - **Zero Bloat:** Modernized with Vite and Umbrella JS for lightning-fast performance.
 - **Privacy First:** Data stays in your browser's `localStorage`. Nothing is ever uploaded.
