@@ -2,6 +2,10 @@
 node_modules/
 bun.lockb
 
+# Vite / Build outputs
+dist
+dev-dist
+
 # Bun specific
 .bun-build/
 *.bun

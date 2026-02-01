@@ -8,21 +8,70 @@
     <link rel="icon" type="image/png" href="loyal_192.png">
     <link rel="apple-touch-icon" href="loyal_192.png">
     <title>Loyal</title>
-    <script src="JsBarcode.all.min.js"></script>
-    <script src="qrcode.min.js"></script>
-    <script src="surreal.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; margin: 0; }
-        .card { background: white; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; overflow: hidden; padding: 5px; }
-        .card-content { padding: 10px 15px; flex-grow: 1; text-align: left; cursor: pointer; }
+
+        .card { 
+            background: white; 
+            margin: 10px 0; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 5px;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .card-content { 
+            padding: 10px 15px; 
+            flex: 1;
+            min-width: 0;
+            text-align: left; 
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-content small {
+            display: block;
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 100%;
+        }
+
+        .delete-btn {
+            flex-shrink: 0;
+            background: #ff4444; 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            margin: 0 10px;
+        }
+
+        .barcode-text {
+            font-size: 0.85em; 
+            color: #666; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            display: block;
+            width: 100%;
+        }
+
         #detailView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         
-        /* Ensure QR and Barcode containers are sized correctly */
         #barcode, #qrcode { margin-top: 20px; max-width: 90%; }
-        #qrcode img { margin: 0 auto; } /* Center the generated QR image */
+        #qrcode { margin: 0 auto; display: block; } 
 
         .btn { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
-        .delete-btn { background: #ff4444; color: white; border: none; padding: 10px 16px; cursor: pointer; font-weight: bold; border-radius: 8px; margin-right: 10px; margin-left: 10px; }
         .flex { display: flex !important; }
         .hidden { display: none !important; }
         input { padding: 12px; margin: 5px; border-radius: 6px; border: 1px solid #ddd; width: 85%; max-width: 300px; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
@@ -52,7 +101,7 @@
             <option value="QR">QR Code</option>
         </select>
         <svg id="barcode"></svg>
-        <div id="qrcode"></div>
+        <canvas id="qrcode"></canvas>
         
         <button class="btn" style="background:#666; margin-top: 30px;" id="closeBtn">Back</button>
     </div>
@@ -67,164 +116,13 @@
         </div>
     </div>
 
-    <script>
-        var cards = JSON.parse(localStorage.getItem('cards') || '[]');
-        var qrInstance = null; // Global instance for QRCode
+    <script type="module" src="src/main.js"></script>
 
-        if ('serviceWorker' in navigator) {
-            // 1. Detect when a new service worker takes over
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log("New controller found, reloading...");
-                window.location.reload(); 
-            });
-
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    // Check for updates
-                    reg.onupdatefound = () => {
-                        const newWorker = reg.installing;
-                        if (newWorker) {
-                            newWorker.onstatechange = () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // This triggers the 'controllerchange' event above
-                                    if (confirm("New version ready! Update now?")) {
-                                        newWorker.postMessage({ action: 'skipWaiting' });
-                                    }
-                                }
-                            };
-                        }
-                    };
-                    
-                    if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({action: 'getVersion'});
-                    }
-                });
-            });
-
-            navigator.serviceWorker.addEventListener('message', (event) => {
-                if (event.data.version) {
-                    // Using Surreal to update the text
-                    const display = me('#version-display');
-                    if (display) display.innerText = event.data.version;
-                }
-            });
-        }
-
-        // 2. App Logic (Runs after Surreal is ready)
-        function initLoyal() {
-            if (typeof me === 'undefined') { return setTimeout(initLoyal, 10); }
-
-            const renderList = () => {
-                const list = me("#cardList");
-                if (cards.length === 0) {
-                    list.innerHTML = "<p style='color:#888'>No cards saved yet.</p>";
-                    return;
-                }
-                list.innerHTML = cards.map((c, i) => `
-                    <div class="card">
-                        <div class="card-content" data-index="${i}">
-                            <strong>${c.store_name}</strong><br>
-                            <small>${c.barcode_number}</small>
-                        </div>
-                        <button class="delete-btn" data-index="${i}">Delete</button>
-                    </div>
-                `).join('');
-
-                any(".card-content").on("click", e => showCard(me(e).attribute("data-index")));
-                any(".delete-btn").on("click", e => deleteCard(me(e).attribute("data-index")));
-            };
-
-            const deleteCard = (i) => {
-                if (confirm("Delete this card?")) {
-                    cards.splice(i, 1);
-                    localStorage.setItem('cards', JSON.stringify(cards));
-                    renderList();
-                }
-            };
-
-            let currentCardIndex = null;
-
-            const showCard = (index) => {
-                currentCardIndex = index;
-                const card = cards[index];
-                me("#detailName").innerText = card.store_name;
-                me("#detailView").classAdd("flex");
-                me("#formatSelector").value = card.format || "CODE128";
-                renderCode(card.barcode_number, me("#formatSelector").value);
-            };
-
-            const renderCode = (number, format) => {
-                // Toggle visibility using Surreal
-                me("#barcode").classAdd("hidden");
-                me("#qrcode").classAdd("hidden");
-                me("#qrcode").innerHTML = ""; // Clear previous QR canvas/img
-
-                if (format === "QR") {
-                    me("#qrcode").classRemove("hidden");
-                    // Surreal me() passes the raw DOM node to the QRCode constructor
-                    new QRCode(me("#qrcode"), {
-                        text: number,
-                        width: 200,
-                        height: 200,
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                } else {
-                    me("#barcode").classRemove("hidden");
-                    try {
-                        JsBarcode("#barcode", number, { 
-                            format: format, 
-                            width: 2, 
-                            height: 100, 
-                            displayValue: true 
-                        });
-                    } catch (e) { 
-                        console.error("Barcode rendering failed", e); 
-                    }
-                }
-            };
-
-            // Listen for dropdown changes
-            me("#formatSelector").on("change", (e) => {
-                const newFormat = e.target.value;
-                const card = cards[currentCardIndex];
-                card.format = newFormat;
-                localStorage.setItem('cards', JSON.stringify(cards));
-                renderCode(card.barcode_number, newFormat);
-            });
-
-            me("#saveBtn").on("click", () => {
-                const sn = me("#store_name").value, bn = me("#barcode_number").value;
-                if(!sn || !bn) return alert("Enter Store Name and Barcode");
-                cards.push({ store_name: sn, barcode_number: bn, customer_number: me("#customer_number").value, format: "CODE128" });
-                localStorage.setItem('cards', JSON.stringify(cards));
-                any("input").run(el => el.value = "");
-                renderList();
-            });
-
-            me("#closeBtn").on("click", () => me("#detailView").classRemove("flex"));
-            me("#backupBtn").on("click", () => {
-                const date = new Date().toISOString().split('T')[0];
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
-                const dl = document.createElement('a');
-                dl.setAttribute("href", dataStr);
-                dl.setAttribute("download", `loyal_backup_${date}.json`);
-                dl.click();
-            });
-            me("#restoreBtn").on("click", () => me("#restoreFile").click());
-            me("#restoreFile").on("change", (e) => {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    cards = JSON.parse(evt.target.result);
-                    localStorage.setItem('cards', JSON.stringify(cards));
-                    renderList();
-                };
-                reader.readAsText(e.target.files[0]);
-            });
-
-            renderList();
-        }
-        
-        window.addEventListener('load', initLoyal);
+    <script type="module">
+        import { registerSW } from 'virtual:pwa-register'
+        // This handles automatic updates without needing confirm() boxes
+        registerSW({ immediate: true })
     </script>
+    
 </body>
 </html>

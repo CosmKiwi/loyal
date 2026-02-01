@@ -1,3 +1,5 @@
 This project uses the following third-party libraries:
 
 - JsBarcode (MIT License) - https://github.com/lindell/JsBarcode
+- node-qrcode (MIT License) - https://github.com/soldair/node-qrcode
+- Umbrella JS (MIT License) - https://github.com/franciscop/umbrella
