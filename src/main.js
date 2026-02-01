@@ -1,25 +1,21 @@
-// src/main.js
-import './vendor/surreal.js';
+import u from 'umbrellajs';
 import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 
 let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 let currentCardIndex = null;
 
-// Modernized renderCode using async/await for the qrcode library
 async function renderCode(number, format) {
-    const barcodeEl = me("#barcode");
-    const qrcodeEl = me("#qrcode");
+    const barcodeEl = u("#barcode");
+    const qrcodeEl = u("#qrcode");
 
-    // Hide both initially
-    barcodeEl.classAdd("hidden");
-    qrcodeEl.classAdd("hidden");
+    barcodeEl.addClass("hidden");
+    qrcodeEl.addClass("hidden");
 
     if (format === "QR") {
-        qrcodeEl.classRemove("hidden");
+        qrcodeEl.removeClass("hidden");
         try {
-            // Render to the canvas added in index.html
-            await QRCode.toCanvas(qrcodeEl, number, {
+            await QRCode.toCanvas(qrcodeEl.first(), number, {
                 width: 250,
                 margin: 2,
                 errorCorrectionLevel: 'H'
@@ -28,7 +24,7 @@ async function renderCode(number, format) {
             console.error("QR Error:", err);
         }
     } else {
-        barcodeEl.classRemove("hidden");
+        barcodeEl.removeClass("hidden");
         try {
             JsBarcode("#barcode", number, { 
                 format: format, 
@@ -43,15 +39,13 @@ async function renderCode(number, format) {
 }
 
 function renderList() {
-    const list = me("#cardList");
-    if (!list) return;
-
+    const list = u("#cardList");
     if (cards.length === 0) {
-        list.innerHTML = "<p style='color:#888'>No cards saved yet.</p>";
+        list.html("<p style='color:#888'>No cards saved yet.</p>");
         return;
     }
-    
-    list.innerHTML = cards.map((c, i) => `
+
+    const html = cards.map((c, i) => `
         <div class="card">
             <div class="card-content" data-index="${i}">
                 <strong>${c.store_name}</strong>
@@ -61,17 +55,26 @@ function renderList() {
         </div>
     `).join('');
 
-    any(".card-content").on("click", e => showCard(me(e).attribute("data-index")));
-    any(".delete-btn").on("click", e => deleteCard(me(e).attribute("data-index")));
+    list.html(html);
+
+    u(".card-content").on("click", e => {
+        const index = u(e.currentTarget).attr("data-index");
+        showCard(index);
+    });
+
+    u(".delete-btn").on("click", e => {
+        const index = u(e.currentTarget).attr("data-index");
+        deleteCard(index);
+    });
 }
 
 function showCard(index) {
     currentCardIndex = index;
     const card = cards[index];
-    me("#detailName").innerText = card.store_name;
-    me("#detailView").classAdd("flex");
-    me("#formatSelector").value = card.format || "CODE128";
-    renderCode(card.barcode_number, me("#formatSelector").value);
+    u("#detailName").text(card.store_name);
+    u("#detailView").addClass("flex");
+    u("#formatSelector").first().value = card.format || "CODE128";
+    renderCode(card.barcode_number, u("#formatSelector").first().value);
 }
 
 function deleteCard(i) {
@@ -82,21 +85,8 @@ function deleteCard(i) {
     }
 }
 
-// Main Initialization
 export function initLoyal() {
-    // Safety check for Surreal library
-    if (typeof me === 'undefined') return setTimeout(initLoyal, 10);
-
-    const versionDisplay = document.querySelector("#version-display");
-    if (versionDisplay) {
-        const isTest = import.meta.env.BASE_URL.includes('/test/');
-        const envLabel = isTest ? "(Test)" : "(Prod)";
-        // Use the variable we defined in vite.config.js
-        versionDisplay.innerText = `v${__APP_VERSION__} ${envLabel}`;
-    }
-
-    // Event: Dropdown Change
-    me("#formatSelector").on("change", (e) => {
+    u("#formatSelector").on("change", (e) => {
         const newFormat = e.target.value;
         const card = cards[currentCardIndex];
         if (card) {
@@ -106,11 +96,10 @@ export function initLoyal() {
         }
     });
 
-    // Event: Save Card
-    me("#saveBtn").on("click", () => {
-        const sn = me("#store_name").value;
-        const bn = me("#barcode_number").value;
-        const cn = me("#customer_number").value;
+    u("#saveBtn").on("click", () => {
+        const sn = u("#store_name").first().value;
+        const bn = u("#barcode_number").first().value;
+        const cn = u("#customer_number").first().value;
         
         if(!sn || !bn) return alert("Enter Store Name and Barcode");
         
@@ -122,19 +111,13 @@ export function initLoyal() {
         });
         
         localStorage.setItem('cards', JSON.stringify(cards));
-        
-        // Clear inputs
-        me("#store_name").value = "";
-        me("#barcode_number").value = "";
-        me("#customer_number").value = "";
-        
+        u("#store_name, #barcode_number, #customer_number").first().value = "";
         renderList();
     });
 
-    // Event: UI Controls
-    me("#closeBtn").on("click", () => me("#detailView").classRemove("flex"));
+    u("#closeBtn").on("click", () => u("#detailView").removeClass("flex"));
     
-    me("#backupBtn").on("click", () => {
+    u("#backupBtn").on("click", () => {
         const date = new Date().toISOString().split('T')[0];
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
         const dl = document.createElement('a');
@@ -143,9 +126,9 @@ export function initLoyal() {
         dl.click();
     });
 
-    me("#restoreBtn").on("click", () => document.querySelector("#restoreFile").click());
+    u("#restoreBtn").on("click", () => u("#restoreFile").first().click());
     
-    me("#restoreFile").on("change", (e) => {
+    u("#restoreFile").on("change", (e) => {
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
@@ -161,12 +144,15 @@ export function initLoyal() {
         }
     });
 
+    // Version Display
+    const versionDisplay = u("#version-display");
+    if (versionDisplay.length) {
+        const isTest = import.meta.env.BASE_URL.includes('/test/');
+        const envLabel = isTest ? "(Test)" : "(Prod)";
+        versionDisplay.text(`v${__APP_VERSION__} ${envLabel}`);
+    }
+
     renderList();
 }
 
-// Kick it off when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLoyal);
-} else {
-    initLoyal();
-}
+document.addEventListener('DOMContentLoaded', initLoyal);
