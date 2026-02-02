@@ -8,23 +8,27 @@ let currentCardIndex = null;
 async function renderCode(number, format) {
     const barcodeEl = u("#barcode");
     const qrcodeEl = u("#qrcode");
+    const errorEl = u("#barcodeError"); // Add this to your HTML
 
     barcodeEl.addClass("hidden");
     qrcodeEl.addClass("hidden");
+    errorEl.addClass("hidden").text(""); // Clear previous errors
 
     if (format === "QR") {
         qrcodeEl.removeClass("hidden");
         try {
-            await QRCode.toCanvas(qrcodeEl.first(), number, {
+            const canvas = qrcodeEl.first();
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height); 
+            await QRCode.toCanvas(canvas, number, {
                 width: 250,
                 margin: 2,
                 errorCorrectionLevel: 'H'
             });
         } catch (err) {
-            console.error("QR Error:", err);
+            errorEl.removeClass("hidden").text("QR Generation failed.");
         }
     } else {
-        barcodeEl.removeClass("hidden");
         try {
             JsBarcode("#barcode", number, { 
                 format: format, 
@@ -32,8 +36,15 @@ async function renderCode(number, format) {
                 height: 100, 
                 displayValue: true 
             });
+            barcodeEl.removeClass("hidden");
         } catch (e) { 
-            console.error("Barcode rendering failed", e); 
+            // Handle the specific error you saw in the console
+            barcodeEl.addClass("hidden");
+            errorEl.removeClass("hidden").html(
+                `<strong>Format Error:</strong><br>` +
+                `This number is not valid for ${format}.<br>` +
+                `<small>Try switching to Code 128.</small>`
+            );
         }
     }
 }
@@ -57,7 +68,7 @@ function renderList() {
 
     list.html(html);
 
-    u(".card-content").on("click", e => {
+    u("#cardList").on("click", ".card-content", e => {
         const index = u(e.currentTarget).attr("data-index");
         showCard(index);
     });
@@ -68,6 +79,33 @@ function renderList() {
     });
 }
 
+let wakeLock = null;
+
+document.addEventListener('visibilitychange', async () => {
+    const isBarcodeVisible = u("#detailView").hasClass("flex");
+    
+    if (document.visibilityState === 'visible' && isBarcodeVisible) {
+        await requestWakeLock();
+    }
+});
+
+const requestWakeLock = async () => {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (err) {
+    console.log(`${err.name}, ${err.message}`);
+  }
+};
+
+const releaseWakeLock = async () => {
+  if (wakeLock !== null) {
+    await wakeLock.release();
+    wakeLock = null;
+  }
+};
+
 function showCard(index) {
     currentCardIndex = index;
     const card = cards[index];
@@ -75,6 +113,7 @@ function showCard(index) {
     u("#detailView").addClass("flex");
     u("#formatSelector").first().value = card.format || "CODE128";
     renderCode(card.barcode_number, u("#formatSelector").first().value);
+    requestWakeLock();
 }
 
 function deleteCard(i) {
@@ -111,11 +150,14 @@ export function initLoyal() {
         });
         
         localStorage.setItem('cards', JSON.stringify(cards));
-        u("#store_name, #barcode_number, #customer_number").first().value = "";
+        u("#store_name, #barcode_number, #customer_number").each(el => el.value = "");
         renderList();
     });
 
-    u("#closeBtn").on("click", () => u("#detailView").removeClass("flex"));
+    u("#closeBtn").on("click", async () => {
+        u("#detailView").removeClass("flex");
+        await releaseWakeLock();
+    });
     
     u("#backupBtn").on("click", () => {
         const date = new Date().toISOString().split('T')[0];
