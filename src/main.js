@@ -117,7 +117,7 @@ function showCard(index) {
 
     // Reset Edit Mode
     u("#editForm, #saveEditBtn, #cancelEditBtn").addClass("hidden");
-    u("#detailName, #detailCustomerNumber, #barcode, #qrcode, #formatSelector, #editBtn, #closeBtn").removeClass("hidden");
+    u("#detailName, #detailCustomerNumber, #formatSelector, #editBtn, #closeBtn").removeClass("hidden");
 
     requestWakeLock();
 }
@@ -188,8 +188,7 @@ export function initLoyal() {
     });
 
     u("#cancelEditBtn").on("click", () => {
-        u("#editForm, #saveEditBtn, #cancelEditBtn").addClass("hidden");
-        u("#detailName, #detailCustomerNumber, #barcode, #qrcode, #formatSelector, #editBtn, #closeBtn").removeClass("hidden");
+        showCard(currentCardIndex);
     });
 
     u("#saveEditBtn").on("click", () => {
