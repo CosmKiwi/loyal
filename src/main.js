@@ -5,6 +5,16 @@ import QRCode from 'qrcode';
 let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 let currentCardIndex = null;
 
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 async function renderCode(number, format) {
     const barcodeEl = u("#barcode");
     const qrcodeEl = u("#qrcode");
@@ -59,24 +69,14 @@ function renderList() {
     const html = cards.map((c, i) => `
         <div class="card">
             <div class="card-content" data-index="${i}">
-                <strong>${c.store_name}</strong>
-                <span class="barcode-text">${c.barcode_number}</span>
+                <strong>${escapeHtml(c.store_name)}</strong>
+                <span class="barcode-text">${escapeHtml(c.barcode_number)}</span>
             </div>
             <button class="delete-btn" data-index="${i}">Delete</button>
         </div>
     `).join('');
 
     list.html(html);
-
-    u("#cardList").on("click", ".card-content", e => {
-        const index = u(e.currentTarget).attr("data-index");
-        showCard(index);
-    });
-
-    u(".delete-btn").on("click", e => {
-        const index = u(e.currentTarget).attr("data-index");
-        deleteCard(index);
-    });
 }
 
 let wakeLock = null;
@@ -110,6 +110,7 @@ function showCard(index) {
     currentCardIndex = index;
     const card = cards[index];
     u("#detailName").text(card.store_name);
+    u("#detailCustomerNumber").text(card.customer_number || "");
     u("#detailView").addClass("flex");
     u("#formatSelector").first().value = card.format || "CODE128";
     renderCode(card.barcode_number, u("#formatSelector").first().value);
@@ -125,6 +126,17 @@ function deleteCard(i) {
 }
 
 export function initLoyal() {
+    // Event Delegation for List Items
+    u("#cardList").on("click", ".card-content", e => {
+        const index = u(e.currentTarget).attr("data-index");
+        showCard(index);
+    });
+
+    u("#cardList").on("click", ".delete-btn", e => {
+        const index = u(e.target).attr("data-index");
+        deleteCard(index);
+    });
+
     u("#formatSelector").on("change", (e) => {
         const newFormat = e.target.value;
         const card = cards[currentCardIndex];
