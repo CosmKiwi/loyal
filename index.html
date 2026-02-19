@@ -28,6 +28,12 @@
     <div id="detailView">
         <h1 id="detailName"></h1>
         <p id="detailCustomerNumber" style="font-size: 1.1em; color: #555; margin: -10px 0 15px 0;"></p>
+
+        <div id="editForm" class="hidden" style="width: 100%; max-width: 320px; margin-bottom: 20px;">
+            <input type="text" id="editStoreName" placeholder="Store Name">
+            <input type="text" id="editBarcodeNumber" placeholder="Barcode Number">
+            <input type="text" id="editCustomerNumber" placeholder="Customer Number">
+        </div>
         <select id="formatSelector" style="padding: 10px; border-radius: 8px; margin-bottom: 10px;">
             <option value="CODE128">Code 128 (Standard)</option>
             <option value="EAN13">EAN-13 (Supermarkets)</option>
@@ -40,7 +46,12 @@
         <svg id="barcode"></svg>
         <canvas id="qrcode"></canvas>
 
-        <button class="btn" style="background:#666; margin-top: 30px;" id="closeBtn">Back</button>
+        <div style="margin-top: 30px;">
+            <button class="btn" style="background:#28a745" id="editBtn">Edit</button>
+            <button class="btn hidden" style="background:#28a745" id="saveEditBtn">Save</button>
+            <button class="btn" style="background:#666;" id="closeBtn">Back</button>
+            <button class="btn hidden" style="background:#dc3545;" id="cancelEditBtn">Cancel</button>
+        </div>
     </div>
 
     <div id="settings" style="margin-top: 40px; padding-top: 20px;">

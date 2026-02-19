@@ -29,7 +29,7 @@ async function renderCode(number, format) {
         try {
             const canvas = qrcodeEl.first();
             const context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height); 
+            context.clearRect(0, 0, canvas.width, canvas.height);
             await QRCode.toCanvas(canvas, number, {
                 width: 250,
                 margin: 2,
@@ -40,14 +40,14 @@ async function renderCode(number, format) {
         }
     } else {
         try {
-            JsBarcode("#barcode", number, { 
-                format: format, 
-                width: 2, 
-                height: 100, 
-                displayValue: true 
+            JsBarcode("#barcode", number, {
+                format: format,
+                width: 2,
+                height: 100,
+                displayValue: true
             });
             barcodeEl.removeClass("hidden");
-        } catch (e) { 
+        } catch (e) {
             // Handle the specific error you saw in the console
             barcodeEl.addClass("hidden");
             errorEl.removeClass("hidden").html(
@@ -83,27 +83,27 @@ let wakeLock = null;
 
 document.addEventListener('visibilitychange', async () => {
     const isBarcodeVisible = u("#detailView").hasClass("flex");
-    
+
     if (document.visibilityState === 'visible' && isBarcodeVisible) {
         await requestWakeLock();
     }
 });
 
 const requestWakeLock = async () => {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.log(`${err.name}, ${err.message}`);
     }
-  } catch (err) {
-    console.log(`${err.name}, ${err.message}`);
-  }
 };
 
 const releaseWakeLock = async () => {
-  if (wakeLock !== null) {
-    await wakeLock.release();
-    wakeLock = null;
-  }
+    if (wakeLock !== null) {
+        await wakeLock.release();
+        wakeLock = null;
+    }
 };
 
 function showCard(index) {
@@ -114,6 +114,11 @@ function showCard(index) {
     u("#detailView").addClass("flex");
     u("#formatSelector").first().value = card.format || "CODE128";
     renderCode(card.barcode_number, u("#formatSelector").first().value);
+
+    // Reset Edit Mode
+    u("#editForm, #saveEditBtn, #cancelEditBtn").addClass("hidden");
+    u("#detailName, #detailCustomerNumber, #barcode, #qrcode, #formatSelector, #editBtn, #closeBtn").removeClass("hidden");
+
     requestWakeLock();
 }
 
@@ -151,16 +156,16 @@ export function initLoyal() {
         const sn = u("#store_name").first().value;
         const bn = u("#barcode_number").first().value;
         const cn = u("#customer_number").first().value;
-        
-        if(!sn || !bn) return alert("Enter Store Name and Barcode");
-        
-        cards.push({ 
-            store_name: sn, 
-            barcode_number: bn, 
-            customer_number: cn, 
-            format: "CODE128" 
+
+        if (!sn || !bn) return alert("Enter Store Name and Barcode");
+
+        cards.push({
+            store_name: sn,
+            barcode_number: bn,
+            customer_number: cn,
+            format: "CODE128"
         });
-        
+
         localStorage.setItem('cards', JSON.stringify(cards));
         u("#store_name, #barcode_number, #customer_number").each(el => el.value = "");
         renderList();
@@ -170,7 +175,38 @@ export function initLoyal() {
         u("#detailView").removeClass("flex");
         await releaseWakeLock();
     });
-    
+
+    // Edit Mode Logic
+    u("#editBtn").on("click", () => {
+        const card = cards[currentCardIndex];
+        u("#editStoreName").first().value = card.store_name;
+        u("#editBarcodeNumber").first().value = card.barcode_number;
+        u("#editCustomerNumber").first().value = card.customer_number || "";
+
+        u("#detailName, #detailCustomerNumber, #barcode, #qrcode, #formatSelector, #editBtn, #closeBtn").addClass("hidden");
+        u("#editForm, #saveEditBtn, #cancelEditBtn").removeClass("hidden");
+    });
+
+    u("#cancelEditBtn").on("click", () => {
+        u("#editForm, #saveEditBtn, #cancelEditBtn").addClass("hidden");
+        u("#detailName, #detailCustomerNumber, #barcode, #qrcode, #formatSelector, #editBtn, #closeBtn").removeClass("hidden");
+    });
+
+    u("#saveEditBtn").on("click", () => {
+        const sn = u("#editStoreName").first().value;
+        const bn = u("#editBarcodeNumber").first().value;
+        const cn = u("#editCustomerNumber").first().value;
+
+        if (!sn || !bn) return alert("Store Name and Barcode are required.");
+
+        cards[currentCardIndex].store_name = sn;
+        cards[currentCardIndex].barcode_number = bn;
+        cards[currentCardIndex].customer_number = cn;
+
+        localStorage.setItem('cards', JSON.stringify(cards));
+        showCard(currentCardIndex);
+    });
+
     u("#backupBtn").on("click", () => {
         const date = new Date().toISOString().split('T')[0];
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
@@ -181,7 +217,7 @@ export function initLoyal() {
     });
 
     u("#restoreBtn").on("click", () => u("#restoreFile").first().click());
-    
+
     u("#restoreFile").on("change", (e) => {
         const reader = new FileReader();
         reader.onload = (evt) => {
