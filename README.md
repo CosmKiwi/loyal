@@ -1,7 +1,11 @@
-# 🏷️ loyal
-**Local Loyalty Card Storage**
+<p align="center">
+  <img src="public/loyal_hero.png" width="600" alt="Loyal Hero Image">
+</p>
 
-A ultra-minimalist, privacy-first Progressive Web App (PWA) to replace bloated loyalty apps. No tracking, no accounts, no cloud—just your barcodes stored locally on your device.
+# 🏷️ Loyal
+**Elegant, Private, Local Loyalty Card Storage**
+
+A ultra-minimalist, privacy-first Progressive Web App (PWA) designed to replace bloated loyalty apps. No tracking, no accounts, no cloud—just your barcodes stored securely and locally on your device.
 
 ## 🚀 Getting Started
 1. Open the [Live Link](https://cosmkiwi.github.io/loyal/) in your mobile browser.

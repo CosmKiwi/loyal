@@ -4,65 +4,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="loyal_192.png">
-    <link rel="apple-touch-icon" href="loyal_192.png">
-    <title>Loyal</title>
+    <link rel="icon" type="image/png" href="loyal_fav_icon.png">
+    <link rel="apple-touch-icon" href="loyal_icon_192.png">
+    <title>Loyal | Your Digital Wallet</title>
     <link rel="stylesheet" href="src/style.css">
 </head>
 
 <body>
+    <header class="brand-header">
+        <img src="loyal_hero.png" alt="Loyal" class="hero-image">
+    </header>
 
-    <h2>My Cards</h2>
-    <div id="cardList"></div>
+    <main class="container">
+        <h2>My Cards</h2>
+        <div id="cardList"></div>
 
-    <hr>
+        <hr>
 
-    <h3>Add New Card</h3>
-    <input type="text" id="store_name" placeholder="Store Name">
-    <input type="text" id="barcode_number" placeholder="Barcode Number">
-    <input type="text" id="customer_number" placeholder="Customer Number">
-    <button class="btn" id="saveBtn">Save Card</button>
+        <h3>Add New Card</h3>
+        <input type="text" id="store_name" placeholder="Store Name">
+        <input type="text" id="barcode_number" placeholder="Barcode Number">
+        <input type="text" id="customer_number" placeholder="Customer Number">
+        <button class="btn" id="saveBtn">Save Card</button>
 
-    <div id="detailView">
-        <h1 id="detailName"></h1>
-        <p id="detailCustomerNumber" style="font-size: 1.1em; color: #555; margin: -10px 0 15px 0;"></p>
+        <div id="detailView">
+            <h1 id="detailName"></h1>
+            <p id="detailCustomerNumber" style="font-size: 1.1em; color: #555; margin: -10px 0 15px 0;"></p>
 
-        <div id="editForm" class="hidden" style="width: 100%; max-width: 320px; margin-bottom: 20px;">
-            <input type="text" id="editStoreName" placeholder="Store Name">
-            <input type="text" id="editBarcodeNumber" placeholder="Barcode Number">
-            <input type="text" id="editCustomerNumber" placeholder="Customer Number">
+            <div id="editForm" class="hidden" style="width: 100%; max-width: 320px; margin-bottom: 20px;">
+                <input type="text" id="editStoreName" placeholder="Store Name">
+                <input type="text" id="editBarcodeNumber" placeholder="Barcode Number">
+                <input type="text" id="editCustomerNumber" placeholder="Customer Number">
+            </div>
+            <select id="formatSelector" style="padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <option value="CODE128">Code 128 (Standard)</option>
+                <option value="EAN13">EAN-13 (Supermarkets)</option>
+                <option value="UPC">UPC (12 digits)</option>
+                <option value="QR">QR Code</option>
+            </select>
+
+            <div id="barcodeError" class="hidden"></div>
+
+            <svg id="barcode"></svg>
+            <canvas id="qrcode"></canvas>
+
+            <div style="margin-top: 30px;">
+                <button class="btn" style="background:#28a745" id="editBtn">Edit</button>
+                <button class="btn hidden" style="background:#28a745" id="saveEditBtn">Save</button>
+                <button class="btn" style="background:#666;" id="closeBtn">Back</button>
+                <button class="btn hidden" style="background:#dc3545;" id="cancelEditBtn">Cancel</button>
+            </div>
         </div>
-        <select id="formatSelector" style="padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-            <option value="CODE128">Code 128 (Standard)</option>
-            <option value="EAN13">EAN-13 (Supermarkets)</option>
-            <option value="UPC">UPC (12 digits)</option>
-            <option value="QR">QR Code</option>
-        </select>
 
-        <div id="barcodeError" class="hidden"></div>
+        <div id="settings" style="margin-top: 40px; padding-top: 20px;">
+            <button class="btn secondary-btn" id="backupBtn">Backup to File</button>
+            <button class="btn secondary-btn" style="background:#17a2b8" id="restoreBtn">Restore from File</button>
+            <input type="file" id="restoreFile" style="display:none">
 
-        <svg id="barcode"></svg>
-        <canvas id="qrcode"></canvas>
-
-        <div style="margin-top: 30px;">
-            <button class="btn" style="background:#28a745" id="editBtn">Edit</button>
-            <button class="btn hidden" style="background:#28a745" id="saveEditBtn">Save</button>
-            <button class="btn" style="background:#666;" id="closeBtn">Back</button>
-            <button class="btn hidden" style="background:#dc3545;" id="cancelEditBtn">Cancel</button>
+            <div style="margin-top: 20px; color: #888; font-size: 0.8em;">
+                App Version: <span id="version-display">Detecting...</span>
+            </div>
         </div>
-    </div>
 
-    <div id="settings" style="margin-top: 40px; padding-top: 20px;">
-        <button class="btn secondary-btn" id="backupBtn">Backup to File</button>
-        <button class="btn secondary-btn" style="background:#17a2b8" id="restoreBtn">Restore from File</button>
-        <input type="file" id="restoreFile" style="display:none">
-
-        <div style="margin-top: 20px; color: #888; font-size: 0.8em;">
-            App Version: <span id="version-display">Detecting...</span>
-        </div>
-    </div>
+    </main>
 
     <script type="module" src="src/main.js"></script>
 
