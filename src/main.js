@@ -61,26 +61,68 @@ async function renderCode(number, format) {
 
 function renderList() {
     const list = u("#cardList");
+    list.html(""); // Clear list efficiently
+
     if (cards.length === 0) {
         list.html("<p style='color:#888'>No cards saved yet.</p>");
         return;
     }
 
-    const html = cards.map((c, i) => `
-        <div class="card">
-            <div class="card-content" data-index="${i}">
-                <strong>${escapeHtml(c.store_name)}</strong>
-                <span class="barcode-text">${escapeHtml(c.barcode_number)}</span>
+    cards.forEach((c, i) => {
+        const cardHtml = `
+            <div class="card" draggable="true" data-index="${i}">
+                <div class="grab-handle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="19" r="1"></circle>
+                        <circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="19" r="1"></circle>
+                    </svg>
+                </div>
+                <div class="card-content" data-index="${i}">
+                    <strong>${escapeHtml(c.store_name)}</strong>
+                    <span class="barcode-text">${escapeHtml(c.barcode_number)}</span>
+                </div>
+                <button class="delete-btn" data-index="${i}">Delete</button>
             </div>
-            <button class="delete-btn" data-index="${i}">Delete</button>
-        </div>
-    `).join('');
+        `;
+        list.append(cardHtml);
+    });
+}
 
-    list.html(html);
+function handleDragStart(e) {
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', e.currentTarget.getAttribute('data-index'));
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const card = u(e.currentTarget);
+    if (!card.hasClass('dragging')) {
+        card.addClass('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    u(e.currentTarget).removeClass('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    const toIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+
+    u(e.currentTarget).removeClass('drag-over');
+
+    if (fromIndex !== toIndex) {
+        const movedCard = cards.splice(fromIndex, 1)[0];
+        cards.splice(toIndex, 0, movedCard);
+        localStorage.setItem('cards', JSON.stringify(cards));
+        renderList();
+    }
 }
 
 let wakeLock = null;
-
 document.addEventListener('visibilitychange', async () => {
     const isBarcodeVisible = u("#detailView").hasClass("flex");
 
@@ -132,15 +174,24 @@ function deleteCard(i) {
 
 export function initLoyal() {
     // Event Delegation for List Items
-    u("#cardList").on("click", ".card-content", e => {
+    const cardList = u("#cardList");
+
+    cardList.on("click", ".card-content", e => {
         const index = u(e.currentTarget).attr("data-index");
         showCard(index);
     });
 
-    u("#cardList").on("click", ".delete-btn", e => {
+    cardList.on("click", ".delete-btn", e => {
         const index = u(e.target).attr("data-index");
         deleteCard(index);
     });
+
+    // Drag and Drop Events
+    cardList.on("dragstart", ".card", handleDragStart);
+    cardList.on("dragend", ".card", e => u(e.currentTarget).removeClass('dragging'));
+    cardList.on("dragover", ".card", handleDragOver);
+    cardList.on("dragleave", ".card", handleDragLeave);
+    cardList.on("drop", ".card", handleDrop);
 
     u("#formatSelector").on("change", (e) => {
         const newFormat = e.target.value;
