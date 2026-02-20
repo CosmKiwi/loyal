@@ -1,9 +1,11 @@
 import u from 'umbrellajs';
 import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
+import { Html5Qrcode } from "html5-qrcode";
 
 let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 let currentCardIndex = null;
+let html5QrCode = null;
 
 function escapeHtml(text) {
     if (!text) return "";
@@ -148,6 +150,37 @@ const releaseWakeLock = async () => {
     }
 };
 
+const stopScanner = async () => {
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+            u("#scanner-container").addClass("hidden");
+        } catch (err) {
+            console.warn("Scanner stop error:", err);
+        }
+    }
+};
+
+const onScanSuccess = (decodedText, decodedResult) => {
+    u("#barcode_number").first().value = decodedText;
+
+    // Map library formats to our selector values
+    const formatMap = {
+        'EAN_13': 'EAN13',
+        'CODE_128': 'CODE128',
+        'UPC_A': 'UPC',
+        'UPC_E': 'UPC',
+        'QR_CODE': 'QR'
+    };
+
+    const mappedFormat = formatMap[decodedResult.result.format.formatName] || "CODE128";
+    const formatSelector = u("#formatSelector").first();
+    // Only update if adding new card (selector is visible or we are in add mode)
+    // Actually, scanning is for adding new cards, so we can just update the main inputs.
+
+    stopScanner();
+};
+
 function showCard(index) {
     currentCardIndex = index;
     const card = cards[index];
@@ -192,6 +225,25 @@ export function initLoyal() {
     cardList.on("dragover", ".card", handleDragOver);
     cardList.on("dragleave", ".card", handleDragLeave);
     cardList.on("drop", ".card", handleDrop);
+
+    u("#scanBtn").on("click", async () => {
+        u("#scanner-container").removeClass("hidden");
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess
+            );
+        } catch (err) {
+            alert("Camera access failed or not available.");
+            u("#scanner-container").addClass("hidden");
+        }
+    });
+
+    u("#stopScanBtn").on("click", stopScanner);
 
     u("#formatSelector").on("change", (e) => {
         const newFormat = e.target.value;

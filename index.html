@@ -24,6 +24,13 @@
         <hr>
 
         <h3>Add New Card</h3>
+        <button class="btn" id="scanBtn" style="background:#17a2b8; margin-bottom: 15px;">📷 Scan Card</button>
+
+        <div id="scanner-container" class="hidden">
+            <div id="reader"></div>
+            <button class="btn" id="stopScanBtn" style="background:#dc3545">Stop Scanning</button>
+        </div>
+
         <input type="text" id="store_name" placeholder="Store Name">
         <input type="text" id="barcode_number" placeholder="Barcode Number">
         <input type="text" id="customer_number" placeholder="Customer Number">
