@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "jsbarcode": "^3.12.3",
     "qrcode": "^1.5.4",
     "umbrellajs": "^3.3.3"
