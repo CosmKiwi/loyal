@@ -2,6 +2,7 @@ import u from 'umbrellajs';
 import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 import { Html5Qrcode } from "html5-qrcode";
+import Sortable from 'sortablejs';
 
 let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 let currentCardIndex = null;
@@ -72,7 +73,7 @@ function renderList() {
 
     cards.forEach((c, i) => {
         const cardHtml = `
-            <div class="card" draggable="true" data-index="${i}">
+            <div class="card" data-index="${i}">
                 <div class="grab-handle">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="19" r="1"></circle>
@@ -90,38 +91,22 @@ function renderList() {
     });
 }
 
-function handleDragStart(e) {
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', e.currentTarget.getAttribute('data-index'));
-    e.dataTransfer.effectAllowed = 'move';
-}
+function initSortable() {
+    const el = document.getElementById('cardList');
+    if (!el) return;
 
-function handleDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const card = u(e.currentTarget);
-    if (!card.hasClass('dragging')) {
-        card.addClass('drag-over');
-    }
-}
-
-function handleDragLeave(e) {
-    u(e.currentTarget).removeClass('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    const toIndex = parseInt(e.currentTarget.getAttribute('data-index'));
-
-    u(e.currentTarget).removeClass('drag-over');
-
-    if (fromIndex !== toIndex) {
-        const movedCard = cards.splice(fromIndex, 1)[0];
-        cards.splice(toIndex, 0, movedCard);
-        localStorage.setItem('cards', JSON.stringify(cards));
-        renderList();
-    }
+    Sortable.create(el, {
+        handle: '.grab-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        onEnd: (evt) => {
+            const movedCard = cards.splice(evt.oldIndex, 1)[0];
+            cards.splice(evt.newIndex, 0, movedCard);
+            localStorage.setItem('cards', JSON.stringify(cards));
+            renderList();
+        }
+    });
 }
 
 let wakeLock = null;
@@ -219,12 +204,7 @@ export function initLoyal() {
         deleteCard(index);
     });
 
-    // Drag and Drop Events
-    cardList.on("dragstart", ".card", handleDragStart);
-    cardList.on("dragend", ".card", e => u(e.currentTarget).removeClass('dragging'));
-    cardList.on("dragover", ".card", handleDragOver);
-    cardList.on("dragleave", ".card", handleDragLeave);
-    cardList.on("drop", ".card", handleDrop);
+    initSortable();
 
     u("#scanBtn").on("click", async () => {
         u("#scanner-container").removeClass("hidden");
