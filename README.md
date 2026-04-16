@@ -13,16 +13,18 @@ A ultra-minimalist, privacy-first Progressive Web App (PWA) designed to replace 
 3. Tap **"Install App"** or **"Add to Home Screen"** in your browser menu.
 
 ## ✨ Features
-- **Zero Bloat:** Modernized with Vite and Umbrella JS for lightning-fast performance.
+- **Zero Bloat:** Rebuilt with Svelte for a declarative, lightning-fast UI and seamless state management.
 - **Privacy First:** Data stays in your browser's `localStorage`. Nothing is ever uploaded.
-- **Offline Ready:** Built with `vite-plugin-pwa` for 100% reliability with zero signal.
-- **PWA Powered:** Installable on Android and iOS home screens.
+- **Offline Ready:** Built with `vite-plugin-pwa` for 100% reliability with zero cell signal.
+- **Mobile Optimized:** Gracefully handles mobile OS sleep/wake cycles with persistent local state and native Wake Lock API integration.
 
 ## 🛠️ Tech Stack
-- **Vite + Bun:** Modern build toolchain for optimized asset delivery.
-- **Umbrella JS:** A tiny, powerful library for DOM manipulation and events.
+- **Svelte:** Declarative, compiler-based framework for a tiny, highly optimized footprint.
+- **TypeScript:** End-to-end type safety for rock-solid data integrity.
+- **Vite + Bun:** Modern build toolchain for instant dev serving and optimized asset delivery.
 - **JsBarcode & node-qrcode:** Lightweight libraries for barcode and QR code generation.
-- **Service Workers:** Automated via Workbox for advanced caching.
+- **Html5Qrcode:** Fast, robust in-browser camera scanning.
+- **Service Workers:** Automated via Workbox for advanced offline caching.
 
 ## 🚀 Development
 If you want to run this locally:
