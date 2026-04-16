@@ -1,19 +1,58 @@
+:root {
+    --bg-body: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --bg-surface: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --input-focus: #6366f1;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-body: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+        --bg-surface: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+        --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        --input-focus: #818cf8;
+    }
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--bg-body);
+    color: var(--text-primary);
     padding: 0;
     text-align: center;
     margin: 0;
-    color: #1e293b;
     min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    padding: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 30px 0;
 }
 
 .brand-header {
-    background: white;
+    background: var(--bg-surface);
     padding: 30px 20px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 30px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-md);
+    transition: background 0.3s ease;
 }
 
 .hero-image {
@@ -25,18 +64,12 @@ body {
     border-radius: 12px;
 }
 
-.container {
-    padding: 20px;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
 #scanner-container {
-    background: white;
+    background: var(--bg-surface);
     padding: 15px;
     border-radius: 12px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 #reader {
@@ -46,11 +79,12 @@ body {
     margin-bottom: 10px;
 }
 
+/* --- 4. CARDS --- */
 .card {
-    background: white;
+    background: var(--bg-surface);
     margin: 10px 0;
     border-radius: 12px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -59,28 +93,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.sortable-ghost {
-    opacity: 0.4;
-    background: #e2e8f0 !important;
-}
-
-.sortable-drag {
-    opacity: 0.9;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    transform: scale(1.02);
-}
-
-.grab-handle {
-    cursor: grab;
-    padding: 10px;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.3s ease;
 }
 
 .card-content {
@@ -101,21 +114,9 @@ body {
     max-width: 100%;
 }
 
-.delete-btn {
-    flex-shrink: 0;
-    background: #ff4444;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 8px;
-    margin: 0 10px;
-}
-
 .barcode-text {
     font-size: 0.85em;
-    color: #666;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -123,35 +124,63 @@ body {
     width: 100%;
 }
 
-#detailView {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: white;
-    flex-direction: column;
-    justify-content: center;
+.grab-handle {
+    cursor: grab;
+    padding: 10px;
+    color: var(--text-secondary);
+    display: flex;
     align-items: center;
-    z-index: 1000;
+    justify-content: center;
+    touch-action: none;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--border-color) !important;
+}
+
+.sortable-drag {
+    opacity: 0.9;
+    box-shadow: var(--shadow-md);
+    transform: scale(1.02);
+}
+
+input {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: 14px;
+    margin: 8px auto;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 320px;
+    display: block;
+    box-sizing: border-box;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, background 0.3s ease, color 0.3s ease;
+}
+
+input:focus {
+    border-color: var(--input-focus);
+}
+
+/* Ensure placeholder text adapts in dark mode */
+input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
 }
 
 #barcodeError {
-    color: #ff4444;
+    color: #ef4444;
     padding: 20px;
-    border: 1px dashed #ff4444;
+    border: 1px dashed #ef4444;
     margin: 20px;
     border-radius: 8px;
-    background: #fff5f5;
+    background: rgba(239, 68, 68, 0.1);
 }
 
-#barcode,
-#qrcode {
-    margin-top: 20px;
-    max-width: 90%;
-}
-
+/* Keep QR Code strictly white so it scans properly regardless of theme */
 #qrcode {
     margin: 0 auto;
     display: block;
@@ -160,6 +189,7 @@ body {
     border-radius: 4px;
 }
 
+/* --- 6. BUTTONS --- */
 .btn {
     background: #6366f1;
     color: white;
@@ -169,7 +199,12 @@ body {
     cursor: pointer;
     margin: 5px;
     font-weight: 600;
-    transition: background 0.2s ease, transform 0.1s ease;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn:active {
@@ -180,45 +215,55 @@ body {
     background: #4f46e5;
 }
 
-.flex {
-    display: flex !important;
+.btn-outline {
+    background: transparent;
+    color: var(--input-focus);
+    border: 2px solid var(--input-focus);
 }
 
-.hidden {
-    display: none !important;
+.btn-outline:hover {
+    background: rgba(99, 102, 241, 0.1);
 }
 
-input {
-    padding: 14px;
-    margin: 8px auto;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    width: 90%;
-    max-width: 320px;
-    display: block;
-    box-sizing: border-box;
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.2s;
+.btn-dark {
+    background: #1e293b;
+    color: white;
 }
 
-input:focus {
-    border-color: #6366f1;
+.btn-dark:hover {
+    background: #0f172a;
+}
+
+.btn-danger,
+.delete-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover,
+.delete-btn:hover {
+    background: #dc2626;
+}
+
+.delete-btn {
+    flex-shrink: 0;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 8px;
+    margin: 0 10px;
+    transition: all 0.2s ease;
 }
 
 .secondary-btn {
-    background: #94a3b8;
+    background: var(--border-color);
+    color: var(--text-primary);
     font-size: 0.9em;
     padding: 10px 18px;
 }
 
 .secondary-btn:hover {
-    background: #64748b;
-}
-
-hr {
-    border: 0;
-    height: 1px;
-    background: #e2e8f0;
-    margin: 30px 0;
+    background: var(--text-secondary);
+    color: var(--bg-surface);
 }

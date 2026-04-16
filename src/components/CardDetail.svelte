@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, createEventDispatcher } from "svelte";
+    import { Sun } from "lucide-svelte";
     import JsBarcode from "jsbarcode";
     import QRCode from "qrcode";
     import type { Card, BarcodeFormat } from "../types";
@@ -157,15 +158,9 @@
             <div
                 style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;"
             >
-                <button
-                    class="btn"
-                    style="background:#28a745"
-                    on:click={saveEdit}>Save</button
-                >
-                <button
-                    class="btn"
-                    style="background:#dc3545;"
-                    on:click={() => (isEditing = false)}>Cancel</button
+                <button class="btn" on:click={saveEdit}>Save</button>
+                <button class="btn" on:click={() => (isEditing = false)}
+                    >Cancel</button
                 >
             </div>
         </div>
@@ -211,41 +206,15 @@
             </div>
 
             <div class="brightness-nudge">
-                <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="19.36" x2="19.78" y2="20.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
+                <Sun size={18} />
                 <span>Scanner not reading? Turn up brightness.</span>
             </div>
         </div>
 
         <div style="margin-top: 25px; display: flex; gap: 10px;">
-            <button
-                class="btn"
-                style="background:#28a745"
-                on:click={() => (isEditing = true)}>Edit</button
+            <button class="btn" on:click={() => (isEditing = true)}>Edit</button
             >
-            <button
-                class="btn"
-                style="background:#666;"
-                on:click={() => dispatch("close")}>Back</button
-            >
+            <button class="btn" on:click={() => dispatch("close")}>Back</button>
         </div>
     {/if}
 </div>
