@@ -1,5 +1,8 @@
 This project uses the following third-party libraries:
 
+- Svelte (MIT License) - https://github.com/sveltejs/svelte
 - JsBarcode (MIT License) - https://github.com/lindell/JsBarcode
 - node-qrcode (MIT License) - https://github.com/soldair/node-qrcode
-- Umbrella JS (MIT License) - https://github.com/franciscop/umbrella
+- Html5Qrcode (Apache License 2.0) - https://github.com/mebjas/html5-qrcode
+- SortableJS (MIT License) - https://github.com/SortableJS/Sortable
+- Lucide (ISC License) - https://github.com/lucide-icons/lucide
