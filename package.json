@@ -1,6 +1,6 @@
 {
   "name": "loyal",
-  "version": "0.1.12",
+  "version": "0.2.0",
   "type": "module",
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
