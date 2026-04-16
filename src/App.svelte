@@ -6,6 +6,8 @@
     import type { Card } from "./types";
     import { cardsStore } from "./store";
 
+    import heroImage from "./assets/loyal_hero.png";
+
     let activeCardIndex: number | null = null;
 
     function handleOpenCard(event: CustomEvent<{ card: Card; index: number }>) {
@@ -18,7 +20,7 @@
 </script>
 
 <header class="brand-header">
-    <img src="/loyal_hero.png" alt="Loyal" class="hero-image" />
+    <img src={heroImage} alt="Loyal" class="hero-image" />
 </header>
 
 <main class="container">

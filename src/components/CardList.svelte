@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { GripVertical } from "lucide-svelte";
     import Sortable from "sortablejs";
     import { createEventDispatcher } from "svelte";
     import { cardsStore } from "../store";
@@ -59,27 +60,7 @@
         {#each $cardsStore as card, i (card.barcode_number + i)}
             <div class="card">
                 <div class="grab-handle">
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <circle cx="9" cy="5" r="1"></circle><circle
-                            cx="9"
-                            cy="12"
-                            r="1"
-                        ></circle><circle cx="9" cy="19" r="1"></circle>
-                        <circle cx="15" cy="5" r="1"></circle><circle
-                            cx="15"
-                            cy="12"
-                            r="1"
-                        ></circle><circle cx="15" cy="19" r="1"></circle>
-                    </svg>
+                    <GripVertical size={20} />
                 </div>
 
                 <div

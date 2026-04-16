@@ -18,5 +18,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,json,svelte}'],
       }
     })
-  ]
+  ],
+  optimizeDeps: {
+    exclude: ['lucide-svelte']
+  }
 });

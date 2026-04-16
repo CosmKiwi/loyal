@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { Camera } from "lucide-svelte";
     import { Html5Qrcode } from "html5-qrcode";
     import { cardsStore } from "../store";
 
@@ -61,22 +62,15 @@
     }
 </script>
 
-<button
-    class="btn"
-    style="background:#17a2b8; margin-bottom: 15px;"
-    on:click={() => (isScanning = true)}
->
-    📷 Scan Card
+<button class="btn btn-dark" on:click={() => (isScanning = true)}>
+    <Camera size={20} />
+    Scan Card
 </button>
 
 {#if isScanning}
     <div id="scanner-container">
         <div id="reader" use:qrScanner></div>
-        <button
-            class="btn"
-            style="background:#dc3545"
-            on:click={() => (isScanning = false)}
-        >
+        <button class="btn btn-danger" on:click={() => (isScanning = false)}>
             Stop Scanning
         </button>
     </div>

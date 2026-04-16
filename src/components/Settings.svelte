@@ -56,10 +56,8 @@
     <button class="btn secondary-btn" on:click={backupCards}
         >Backup to File</button
     >
-    <button
-        class="btn secondary-btn"
-        style="background:#17a2b8"
-        on:click={triggerRestore}>Restore from File</button
+    <button class="btn secondary-btn" on:click={triggerRestore}
+        >Restore from File</button
     >
 
     <input
