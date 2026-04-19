@@ -1,14 +1,11 @@
 <script lang="ts">
     import { GripVertical } from "lucide-svelte";
     import Sortable from "sortablejs";
-    import { createEventDispatcher } from "svelte";
     import { cardsStore } from "../store";
     import type { Card } from "../types";
 
-    // This allows us to tell the parent App.svelte when a card is clicked
-    const dispatch = createEventDispatcher<{
-        openCard: { card: Card; index: number };
-    }>();
+    // Standard callback prop replaces createEventDispatcher
+    export let onopenCard: (detail: { card: Card; index: number }) => void;
 
     // 1. The Svelte Action for SortableJS
     function sortableList(node: HTMLElement) {
@@ -67,10 +64,9 @@
                     class="card-content"
                     role="button"
                     tabindex="0"
-                    on:click={() => dispatch("openCard", { card, index: i })}
+                    on:click={() => onopenCard({ card, index: i })}
                     on:keydown={(e) =>
-                        e.key === "Enter" &&
-                        dispatch("openCard", { card, index: i })}
+                        e.key === "Enter" && onopenCard({ card, index: i })}
                 >
                     <strong>{card.store_name}</strong>
                     <span class="barcode-text">{card.barcode_number}</span>

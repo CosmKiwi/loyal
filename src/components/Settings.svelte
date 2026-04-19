@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { Download, Upload } from "lucide-svelte";
     import { cardsStore } from "../store";
     import type { Card } from "../types";
 
@@ -53,22 +54,26 @@
 </script>
 
 <div id="settings" style="margin-top: 40px; padding-top: 20px;">
-    <button class="btn secondary-btn" on:click={backupCards}
-        >Backup to File</button
-    >
-    <button class="btn secondary-btn" on:click={triggerRestore}
-        >Restore from File</button
-    >
+    <button class="btn secondary-btn" onclick={backupCards}>
+        <Download size={18} />
+        Backup to File
+    </button>
+    <button class="btn secondary-btn" onclick={triggerRestore}>
+        <Upload size={18} />
+        Restore from File
+    </button>
 
     <input
         type="file"
         bind:this={fileInput}
-        on:change={handleFile}
+        onchange={handleFile}
         style="display:none"
         accept=".json"
     />
 
-    <div style="margin-top: 20px; color: #888; font-size: 0.8em;">
+    <div
+        style="margin-top: 20px; color: var(--text-secondary); font-size: 0.8em;"
+    >
         App Version: <span>v{version}</span>
     </div>
 </div>

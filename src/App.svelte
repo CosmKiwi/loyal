@@ -10,8 +10,8 @@
 
     let activeCardIndex: number | null = null;
 
-    function handleOpenCard(event: CustomEvent<{ card: Card; index: number }>) {
-        activeCardIndex = event.detail.index;
+    function handleOpenCard(detail: { card: Card; index: number }) {
+        activeCardIndex = detail.index;
     }
 
     function handleCloseCard() {
@@ -25,7 +25,7 @@
 
 <main class="container">
     <h2>My Cards</h2>
-    <CardList on:openCard={handleOpenCard} />
+    <CardList onopenCard={handleOpenCard} />
 
     <hr />
 
@@ -38,7 +38,7 @@
         <CardDetail
             card={$cardsStore[activeCardIndex]}
             index={activeCardIndex}
-            on:close={handleCloseCard}
+            onclose={handleCloseCard}
         />
     {/if}
 </main>

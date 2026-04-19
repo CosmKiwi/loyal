@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, createEventDispatcher } from "svelte";
+    import { onMount, onDestroy } from "svelte";
     import { Sun } from "lucide-svelte";
     import JsBarcode from "jsbarcode";
     import QRCode from "qrcode";
@@ -9,7 +9,7 @@
     export let card: Card;
     export let index: number;
 
-    const dispatch = createEventDispatcher<{ close: void }>();
+    export let onclose: () => void;
 
     let isEditing = false;
     let editStoreName = card.store_name;
@@ -17,29 +17,45 @@
     let editCustomerNumber = card.customer_number || "";
     let formatError = "";
 
-    // --- WakeLock API Logic (Already implemented perfectly!) ---
+    // This counter forces Svelte to destroy and recreate the barcode DOM node on wake
+    let renderTrigger = 0;
+
+    // --- WakeLock API Logic ---
     let wakeLock: WakeLockSentinel | null = null;
 
     async function requestWakeLock() {
         try {
-            if ("wakeLock" in navigator) {
+            // Explicitly check visibility state BEFORE requesting to prevent NotAllowedError crashes
+            if (
+                "wakeLock" in navigator &&
+                document.visibilityState === "visible"
+            ) {
                 wakeLock = await navigator.wakeLock.request("screen");
             }
         } catch (err: any) {
-            console.log(`${err.name}, ${err.message}`);
+            // Silently swallow the error so it doesn't crash the component tree
+            console.warn(`WakeLock failed: ${err.name}, ${err.message}`);
         }
     }
 
     async function releaseWakeLock() {
         if (wakeLock !== null) {
-            await wakeLock.release();
-            wakeLock = null;
+            try {
+                await wakeLock.release();
+                wakeLock = null;
+            } catch (err) {
+                console.warn(err);
+            }
         }
     }
 
     function handleVisibilityChange() {
         if (document.visibilityState === "visible" && !isEditing) {
-            requestWakeLock();
+            // 1. Buffer the wake lock request to let Android's hardware permissions settle
+            setTimeout(requestWakeLock, 50);
+
+            // 2. Increment the trigger to force a complete redraw of the SVG/Canvas
+            renderTrigger += 1;
         }
     }
 
@@ -64,14 +80,13 @@
         function draw(n: string, f: string) {
             formatError = "";
             try {
-                // SIZING TRICK: Increased width (thickness), height, and removed margin to maximize safe space
                 JsBarcode(node, n, {
                     format: f,
                     width: 3,
                     height: 120,
                     displayValue: true,
                     margin: 0,
-                    background: "#ffffff", // Force pure white
+                    background: "#ffffff",
                 });
             } catch (e) {
                 formatError = `Format Error: This number is not valid for ${f}.`;
@@ -90,7 +105,6 @@
     function renderQR(node: HTMLCanvasElement, number: string) {
         function draw(n: string) {
             formatError = "";
-            // SIZING TRICK: Make it bigger (300px) and ensure light areas are pure white
             QRCode.toCanvas(node, n, {
                 width: 300,
                 margin: 1,
@@ -190,20 +204,22 @@
                 <div id="barcodeError">{formatError}</div>
             {/if}
 
-            <div class="barcode-wrapper">
-                {#if card.format === "QR"}
-                    <canvas id="qrcode" use:renderQR={card.barcode_number}
-                    ></canvas>
-                {:else}
-                    <svg
-                        id="barcode"
-                        use:renderBarcode={{
-                            number: card.barcode_number,
-                            format: card.format,
-                        }}
-                    ></svg>
-                {/if}
-            </div>
+            {#key renderTrigger}
+                <div class="barcode-wrapper">
+                    {#if card.format === "QR"}
+                        <canvas id="qrcode" use:renderQR={card.barcode_number}
+                        ></canvas>
+                    {:else}
+                        <svg
+                            id="barcode"
+                            use:renderBarcode={{
+                                number: card.barcode_number,
+                                format: card.format,
+                            }}
+                        ></svg>
+                    {/if}
+                </div>
+            {/key}
 
             <div class="brightness-nudge">
                 <Sun size={18} />
@@ -214,21 +230,20 @@
         <div style="margin-top: 25px; display: flex; gap: 10px;">
             <button class="btn" on:click={() => (isEditing = true)}>Edit</button
             >
-            <button class="btn" on:click={() => dispatch("close")}>Back</button>
+            <button class="btn" on:click={onclose}>Back</button>
         </div>
     {/if}
 </div>
 
 <style>
-    /* Scoped Svelte Styles - These won't affect the rest of your app! */
     .dark-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.85); /* Black out the periphery */
-        backdrop-filter: blur(4px); /* Extra polish for iOS */
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(4px);
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -259,7 +274,6 @@
         padding: 10px 0;
     }
 
-    /* Force the SVG to dynamically scale to the width of the card */
     #barcode {
         width: 100%;
         max-width: 100%;
