@@ -1,79 +1,80 @@
+<!-- src/components/Settings.svelte -->
 <script lang="ts">
-    import { Download, Upload } from "lucide-svelte";
-    import { cardsStore } from "../store";
-    import type { Card } from "../types";
+  import { Download, Upload } from "@lucide/svelte";
+  import { cardsStore } from "../store";
+  import type { Card } from "../types";
 
-    const version =
-        typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.1.12";
+  let { onclose } = $props<{
+    onclose?: () => void;
+  }>();
 
-    let fileInput: HTMLInputElement;
+  const version =
+    typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.1.12";
 
-    function backupCards() {
-        const date = new Date().toISOString().split("T")[0];
-        // We can access the current store state directly by prefixing with $
-        const dataStr =
-            "data:text/json;charset=utf-8," +
-            encodeURIComponent(JSON.stringify($cardsStore));
+  let fileInput = $state<HTMLInputElement | null>(null);
 
-        const dl = document.createElement("a");
-        dl.setAttribute("href", dataStr);
-        dl.setAttribute("download", `loyal_backup_${date}.json`);
-        document.body.appendChild(dl);
-        dl.click();
-        document.body.removeChild(dl);
-    }
+  function backupCards() {
+    const date = new Date().toISOString().split("T")[0];
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify($cardsStore));
 
-    function triggerRestore() {
-        fileInput.click();
-    }
+    const dl = document.createElement("a");
+    dl.setAttribute("href", dataStr);
+    dl.setAttribute("download", `loyal_backup_${date}.json`);
+    document.body.appendChild(dl);
+    dl.click();
+    document.body.removeChild(dl);
+  }
 
-    function handleFile(e: Event) {
-        const target = e.target as HTMLInputElement;
-        if (!target.files || target.files.length === 0) return;
+  function triggerRestore() {
+    fileInput?.click();
+  }
 
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                if (evt.target?.result) {
-                    const parsed = JSON.parse(
-                        evt.target.result as string,
-                    ) as Card[];
-                    // Updating the store automatically updates localStorage AND the DOM!
-                    cardsStore.set(parsed);
-                    alert("Backup restored successfully!");
-                }
-            } catch (err) {
-                alert("Invalid backup file.");
-            }
-        };
-        reader.readAsText(target.files[0]);
+  function handleFile(e: Event) {
+    const target = e.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
 
-        // Reset the input so the user can select the exact same file again if needed
-        target.value = "";
-    }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        if (evt.target?.result) {
+          const parsed = JSON.parse(evt.target.result as string) as Card[];
+          cardsStore.set(parsed);
+          alert("Backup restored successfully!");
+          onclose?.();
+        }
+      } catch (err) {
+        alert("Invalid backup file.");
+      }
+    };
+    reader.readAsText(target.files[0]);
+
+    target.value = "";
+  }
 </script>
 
 <div id="settings" style="margin-top: 40px; padding-top: 20px;">
-    <button class="btn secondary-btn" onclick={backupCards}>
-        <Download size={18} />
-        Backup to File
-    </button>
-    <button class="btn secondary-btn" onclick={triggerRestore}>
-        <Upload size={18} />
-        Restore from File
-    </button>
+  <button class="btn secondary-btn" onclick={backupCards}>
+    <Download size={18} />
+    Backup to File
+  </button>
+  <button class="btn secondary-btn" onclick={triggerRestore}>
+    <Upload size={18} />
+    Restore from File
+  </button>
 
-    <input
-        type="file"
-        bind:this={fileInput}
-        onchange={handleFile}
-        style="display:none"
-        accept=".json"
-    />
+  <input
+    type="file"
+    bind:this={fileInput}
+    onchange={handleFile}
+    style="display:none"
+    accept=".json"
+  />
 
-    <div
-        style="margin-top: 20px; color: var(--text-secondary); font-size: 0.8em;"
-    >
-        App Version: <span>v{version}</span>
-    </div>
+  <div
+    style="margin-top: 20px; color: var(--text-secondary); font-size: 0.8em;"
+  >
+    App Version: <span>v{version}</span>
+  </div>
 </div>
