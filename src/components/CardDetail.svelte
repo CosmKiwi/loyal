@@ -3,6 +3,8 @@
   import { Sun, Trash2, Edit3, Check, X, ArrowLeft } from "@lucide/svelte";
   import JsBarcode from "jsbarcode";
   import QRCode from "qrcode";
+  import CardForm from "./CardForm.svelte";
+  import { getDeterministicColor } from "../presets";
   import type { Card, BarcodeFormat } from "../types";
   import { cardsStore } from "../store";
 
@@ -17,15 +19,22 @@
   let confirmDelete = $state(false);
 
   let editStoreName = $state("");
+  let editCardName = $state("");
   let editBarcodeNumber = $state("");
   let editCustomerNumber = $state("");
+  let editFormat = $state<BarcodeFormat>("CODE128");
+  let editColor = $state("");
+
   let formatError = $state("");
   let renderTrigger = $state(0);
 
   $effect(() => {
     editStoreName = card.store_name;
+    editCardName = card.card_name || "";
     editBarcodeNumber = card.barcode_number;
     editCustomerNumber = card.customer_number || "";
+    editFormat = card.format;
+    editColor = card.color || getDeterministicColor(card.store_name);
   });
 
   $effect(() => {
@@ -127,11 +136,24 @@
       newCards[index] = {
         ...card,
         store_name: editStoreName.trim(),
+        card_name: editCardName.trim() || undefined,
         barcode_number: editBarcodeNumber.trim(),
         customer_number: editCustomerNumber.trim() || undefined,
+        format: editFormat,
+        color: editColor,
       };
       return newCards;
     });
+    isEditing = false;
+  }
+
+  function cancelEdit() {
+    editStoreName = card.store_name;
+    editCardName = card.card_name || "";
+    editBarcodeNumber = card.barcode_number;
+    editCustomerNumber = card.customer_number || "";
+    editFormat = card.format;
+    editColor = card.color || getDeterministicColor(card.store_name);
     isEditing = false;
   }
 
@@ -148,21 +170,19 @@
 <div class="dark-overlay">
   {#if isEditing}
     <div class="barcode-card">
-      <h2 style="margin: 0 0 16px 0;">Edit Card</h2>
-      <input type="text" bind:value={editStoreName} placeholder="Store Name" />
-      <input
-        type="text"
-        bind:value={editBarcodeNumber}
-        placeholder="Barcode Number"
-      />
-      <input
-        type="text"
-        bind:value={editCustomerNumber}
-        placeholder="Customer Number"
+      <h2 style="margin: 0 0 8px 0;">Edit Card</h2>
+
+      <CardForm
+        bind:storeName={editStoreName}
+        bind:cardName={editCardName}
+        bind:barcodeNumber={editBarcodeNumber}
+        bind:customerNumber={editCustomerNumber}
+        bind:format={editFormat}
+        bind:color={editColor}
       />
 
       <div style="margin-top: 16px; display: flex; gap: 10px; width: 100%;">
-        <button class="btn btn-outline" onclick={() => (isEditing = false)}>
+        <button class="btn btn-outline" onclick={cancelEdit}>
           <X size={16} /> Cancel
         </button>
         <button class="btn" onclick={saveEdit}>
@@ -171,8 +191,15 @@
       </div>
     </div>
   {:else}
-    <div class="barcode-card">
-      <h1 class="store-heading">{card.store_name}</h1>
+    <div
+      class="barcode-card"
+      style="border-top: 6px solid {card.color ||
+        getDeterministicColor(card.store_name)};"
+    >
+      <h1 class="store-heading">{card.card_name || card.store_name}</h1>
+      {#if card.card_name}
+        <p class="brand-subheading">{card.store_name}</p>
+      {/if}
       {#if card.customer_number}
         <p class="customer-subtext">ID: {card.customer_number}</p>
       {/if}
@@ -286,10 +313,19 @@
     text-align: center;
   }
 
-  .customer-subtext {
-    margin: 4px 0 12px;
+  .brand-subheading {
+    margin: 2px 0 6px;
     color: #64748b;
     font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .customer-subtext {
+    margin: 2px 0 12px;
+    color: #64748b;
+    font-size: 0.85em;
     font-weight: 500;
   }
 
@@ -304,6 +340,14 @@
     margin-bottom: 12px;
   }
 
+  #barcodeError {
+    color: #ef4444;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
   .barcode-wrapper {
     width: 100%;
     display: flex;
@@ -312,6 +356,7 @@
     background: #ffffff;
     padding: 8px 0;
     min-height: 140px;
+    transform: translateZ(0);
   }
 
   #barcode {
@@ -399,6 +444,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    transition: background 0.15s ease;
   }
 
   .btn-back:hover {
