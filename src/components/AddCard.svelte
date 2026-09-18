@@ -1,83 +1,152 @@
+<!-- src/components/AddCard.svelte -->
 <script lang="ts">
-    import { Camera } from "lucide-svelte";
-    import { Html5Qrcode } from "html5-qrcode";
-    import { cardsStore } from "../store";
+  import { Camera, X, AlertCircle } from "@lucide/svelte";
+  import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+  import CardForm from "./CardForm.svelte";
+  import { cardsStore } from "../store";
+  import { getDeterministicColor } from "../presets";
+  import type { BarcodeFormat } from "../types";
 
-    let storeName = "";
-    let barcodeNumber = "";
-    let customerNumber = "";
-    let isScanning = false;
+  let { onclose } = $props<{ onclose: () => void }>();
 
-    // Svelte Action: Binds the scanner library to the DOM node
-    function qrScanner(node: HTMLElement) {
-        const scanner = new Html5Qrcode(node.id);
+  let storeName = $state("");
+  let cardName = $state("");
+  let barcodeNumber = $state("");
+  let customerNumber = $state("");
+  let format = $state<BarcodeFormat>("CODE128");
+  let color = $state("");
 
+  let isScanning = $state(false);
+  let scanError = $state("");
+  let scannerRef = $state<HTMLElement | null>(null);
+
+  $effect(() => {
+    if (!isScanning || !scannerRef) return;
+
+    const scanner = new Html5Qrcode(scannerRef.id);
+    let isRunning = false;
+
+    scanner
+      .start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+          barcodeNumber = decodedText;
+          scanError = "";
+          isScanning = false;
+        },
+        undefined,
+      )
+      .then(() => {
+        isRunning = true;
+      })
+      .catch((err) => {
+        isRunning = false;
+        isScanning = false;
+        scanError = "Camera not available. Please enter details manually.";
+      });
+
+    return () => {
+      if (
+        isRunning ||
+        scanner.getState() === Html5QrcodeScannerState.SCANNING
+      ) {
         scanner
-            .start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                (decodedText) => {
-                    barcodeNumber = decodedText; // Automatically populates the input!
-                    isScanning = false; // Triggers Svelte to unmount, firing the destroy() below
-                },
-                undefined, // Ignore continuous frame errors
-            )
-            .catch((err) => {
-                alert("Camera access failed or not available.");
-                isScanning = false;
-            });
+          .stop()
+          .then(() => scanner.clear())
+          .catch(() => {});
+      } else {
+        try {
+          scanner.clear();
+        } catch {}
+      }
+    };
+  });
 
-        return {
-            destroy() {
-                // Automatically stops the camera when the user closes the scanner
-                scanner
-                    .stop()
-                    .then(() => scanner.clear())
-                    .catch(console.warn);
-            },
-        };
+  function saveCard() {
+    if (!storeName.trim() || !barcodeNumber.trim()) {
+      alert("Enter Card Type and Barcode");
+      return;
     }
 
-    function saveCard() {
-        if (!storeName || !barcodeNumber) {
-            alert("Enter Store Name and Barcode");
-            return;
-        }
+    cardsStore.update((cards) => [
+      ...cards,
+      {
+        store_name: storeName.trim(),
+        card_name: cardName.trim() || undefined,
+        barcode_number: barcodeNumber.trim(),
+        customer_number: customerNumber.trim() || undefined,
+        format,
+        color: color || getDeterministicColor(storeName.trim()),
+      },
+    ]);
 
-        // Add the new card to the store
-        cardsStore.update((cards) => [
-            ...cards,
-            {
-                store_name: storeName,
-                barcode_number: barcodeNumber,
-                customer_number: customerNumber,
-                format: "CODE128",
-            },
-        ]);
-
-        // Clear the form
-        storeName = "";
-        barcodeNumber = "";
-        customerNumber = "";
-    }
+    onclose();
+  }
 </script>
 
-<button class="btn btn-dark" on:click={() => (isScanning = true)}>
-    <Camera size={20} />
-    Scan Card
-</button>
-
-{#if isScanning}
-    <div id="scanner-container">
-        <div id="reader" use:qrScanner></div>
-        <button class="btn btn-danger" on:click={() => (isScanning = false)}>
-            Stop Scanning
-        </button>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="sheet-backdrop"
+  onclick={(e) => e.target === e.currentTarget && onclose()}
+>
+  <div class="sheet-panel">
+    <div class="sheet-header">
+      <h3>Add New Card</h3>
+      <button class="close-btn" onclick={onclose} aria-label="Close">
+        <X size={20} />
+      </button>
     </div>
-{/if}
 
-<input type="text" bind:value={storeName} placeholder="Store Name" />
-<input type="text" bind:value={barcodeNumber} placeholder="Barcode Number" />
-<input type="text" bind:value={customerNumber} placeholder="Customer Number" />
+    {#if scanError}
+      <div class="scan-error-badge">
+        <AlertCircle size={16} />
+        <span>{scanError}</span>
+      </div>
+    {/if}
 
-<button class="btn" on:click={saveCard}>Save Card</button>
+    {#if !isScanning}
+      <button
+        class="btn btn-dark"
+        onclick={() => {
+          scanError = "";
+          isScanning = true;
+        }}
+      >
+        <Camera size={18} />
+        Scan Card
+      </button>
+    {/if}
+
+    {#if isScanning}
+      <div id="scanner-container" style="margin: 12px 0;">
+        <div
+          id="reader"
+          bind:this={scannerRef}
+          style="border-radius: 8px; overflow: hidden;"
+        ></div>
+        <button
+          class="btn btn-danger"
+          style="margin-top: 10px;"
+          onclick={() => (isScanning = false)}
+        >
+          Stop Scanning
+        </button>
+      </div>
+    {/if}
+
+    <CardForm
+      bind:storeName
+      bind:cardName
+      bind:barcodeNumber
+      bind:customerNumber
+      bind:format
+      bind:color
+    />
+
+    <button class="btn" style="margin-top: 16px;" onclick={saveCard}>
+      Save Card
+    </button>
+  </div>
+</div>
