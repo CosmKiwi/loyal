@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cosmkiwi/loyal/main/public/loyal_hero.png" width="600" alt="Loyal Hero Image">
+  <img src="https://raw.githubusercontent.com/cosmkiwi/loyal/main/src/assets/loyal_hero.png" width="600" alt="Loyal Hero Image">
 </p>
 
 # 🏷️ Loyal
