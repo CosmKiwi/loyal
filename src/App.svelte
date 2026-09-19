@@ -58,13 +58,15 @@
 
 <div class="app-shell">
   <header class="brand-header">
-    <button
-      class="icon-btn-header"
-      aria-label="Settings"
-      onclick={() => (showSettings = true)}
-    >
-      <SettingsIcon size={22} />
-    </button>
+    <div class="header-top-bar">
+      <button
+        class="icon-btn-header"
+        aria-label="Settings"
+        onclick={() => (showSettings = true)}
+      >
+        <SettingsIcon size={24} />
+      </button>
+    </div>
     <img src={heroImage} alt="Loyal" class="hero-image" />
   </header>
 
