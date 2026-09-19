@@ -4,28 +4,23 @@
   import AddCard from "./components/AddCard.svelte";
   import CardDetail from "./components/CardDetail.svelte";
   import Settings from "./components/Settings.svelte";
-  import { cardsStore, migrateCards } from "./store";
-  import type { Card } from "./types";
+  import { cardStore } from "./store";
   import { Plus, Settings as SettingsIcon } from "@lucide/svelte";
   import heroImage from "./assets/loyal_hero.png";
 
-  let activeCardIndex = $state<number | null>(null);
+  let activeCardId = $state<string | null>(null);
   let showAddCard = $state(false);
   let showSettings = $state(false);
 
-  // Rehydrate state and handle cold wake-ups from Android deep sleep
+  let activeCard = $derived(
+    cardStore.items.find((c) => c.id === activeCardId),
+  );
+
+  // Rehydrate state and handle cold wake-ups from mobile deep sleep
   $effect(() => {
     function handleGlobalWake() {
       if (document.visibilityState === "visible") {
-        const raw = localStorage.getItem("cards");
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            cardsStore.set(migrateCards(parsed));
-          } catch (e) {
-            console.warn("Failed to rehydrate cardsStore on wake", e);
-          }
-        }
+        cardStore.rehydrate();
       }
     }
 
@@ -38,20 +33,18 @@
     };
   });
 
-  function handleOpenCard(detail: { card: Card; index: number }) {
-    activeCardIndex = detail.index;
+  function handleOpenCard(id: string) {
+    activeCardId = id;
   }
 
   function handleCloseCard() {
-    activeCardIndex = null;
+    activeCardId = null;
   }
 
   function handleDeleteCard() {
-    if (activeCardIndex !== null) {
-      cardsStore.update((cards) =>
-        cards.filter((_, i) => i !== activeCardIndex),
-      );
-      activeCardIndex = null;
+    if (activeCardId) {
+      cardStore.remove(activeCardId);
+      activeCardId = null;
     }
   }
 </script>
@@ -91,10 +84,9 @@
     <Settings onclose={() => (showSettings = false)} />
   {/if}
 
-  {#if activeCardIndex !== null && $cardsStore[activeCardIndex]}
+  {#if activeCard}
     <CardDetail
-      card={$cardsStore[activeCardIndex]}
-      index={activeCardIndex}
+      card={activeCard}
       onclose={handleCloseCard}
       ondelete={handleDeleteCard}
     />

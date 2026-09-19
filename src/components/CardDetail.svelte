@@ -1,16 +1,17 @@
 <!-- src/components/CardDetail.svelte -->
 <script lang="ts">
   import { Sun, Trash2, Edit3, Check, X, ArrowLeft } from "@lucide/svelte";
-  import JsBarcode from "jsbarcode";
-  import QRCode from "qrcode";
   import CardForm from "./CardForm.svelte";
-  import { getDeterministicColor } from "../presets";
-  import type { Card, BarcodeFormat } from "../types";
-  import { cardsStore } from "../store";
+  import BarcodeView from "./BarcodeView.svelte";
+  import { cardStore } from "../store";
+  import { SUPPORTED_FORMATS, type Card, type BarcodeFormat } from "../types";
 
-  let { card, index, onclose, ondelete } = $props<{
+  let {
+    card,
+    onclose,
+    ondelete,
+  } = $props<{
     card: Card;
-    index: number;
     onclose: () => void;
     ondelete: () => void;
   }>();
@@ -18,15 +19,27 @@
   let isEditing = $state(false);
   let confirmDelete = $state(false);
 
-  let editStoreName = $state("");
-  let editCardName = $state("");
-  let editBarcodeNumber = $state("");
-  let editCustomerNumber = $state("");
-  let editFormat = $state<BarcodeFormat>("CODE128");
-  let editColor = $state("");
+  let draftStoreName = $state("");
+  let draftCardName = $state("");
+  let draftBarcodeNumber = $state("");
+  let draftCustomerNumber = $state("");
+  let draftFormat = $state<BarcodeFormat>("CODE128");
+  let draftColor = $state("");
 
-  let formatError = $state("");
   let renderKey = $state(0);
+
+  function resetDraft() {
+    draftStoreName = card.store_name;
+    draftCardName = card.card_name || "";
+    draftBarcodeNumber = card.barcode_number;
+    draftCustomerNumber = card.customer_number || "";
+    draftFormat = card.format;
+    draftColor = card.color;
+  }
+
+  $effect(() => {
+    resetDraft();
+  });
 
   // Lock background page scroll while detail overlay is mounted
   $effect(() => {
@@ -36,15 +49,7 @@
     };
   });
 
-  $effect(() => {
-    editStoreName = card.store_name;
-    editCardName = card.card_name || "";
-    editBarcodeNumber = card.barcode_number;
-    editCustomerNumber = card.customer_number || "";
-    editFormat = card.format;
-    editColor = card.color || getDeterministicColor(card.store_name);
-  });
-
+  // WakeLock & mobile wake-up management
   $effect(() => {
     let wakeLock: WakeLockSentinel | null = null;
 
@@ -95,108 +100,51 @@
     };
   });
 
-  function renderBarcode(
-    node: SVGElement,
-    params: { number: string; format: string },
-  ) {
-    function draw(n: string, f: string) {
-      formatError = "";
-      try {
-        JsBarcode(node, n, {
-          format: f,
-          width: 3,
-          height: 120,
-          displayValue: true,
-          margin: 0,
-          background: "#ffffff",
-        });
-      } catch (e) {
-        formatError = `Format Error: Not valid for ${f}.`;
-        node.innerHTML = "";
-      }
-    }
-    draw(params.number, params.format);
-
-    return {
-      update(newParams: { number: string; format: string }) {
-        draw(newParams.number, newParams.format);
-      },
-    };
+  function startEdit() {
+    resetDraft();
+    isEditing = true;
   }
 
-  function renderQR(node: HTMLCanvasElement, number: string) {
-    function draw(n: string) {
-      formatError = "";
-      QRCode.toCanvas(node, n, {
-        width: 280,
-        margin: 1,
-        errorCorrectionLevel: "H",
-        color: { light: "#ffffff" },
-      }).catch(() => (formatError = "QR Generation failed."));
-    }
-    draw(number);
-
-    return {
-      update(newNumber: string) {
-        draw(newNumber);
-      },
-    };
+  function cancelEdit() {
+    resetDraft();
+    isEditing = false;
   }
 
   function saveEdit() {
-    if (!editStoreName.trim() || !editBarcodeNumber.trim()) {
+    if (!draftStoreName.trim() || !draftBarcodeNumber.trim()) {
       alert("Store Name and Barcode are required.");
       return;
     }
 
-    cardsStore.update((cards) => {
-      const newCards = [...cards];
-      newCards[index] = {
-        ...card,
-        store_name: editStoreName.trim(),
-        card_name: editCardName.trim() || undefined,
-        barcode_number: editBarcodeNumber.trim(),
-        customer_number: editCustomerNumber.trim() || undefined,
-        format: editFormat,
-        color: editColor,
-      };
-      return newCards;
+    cardStore.update(card.id, {
+      store_name: draftStoreName.trim(),
+      card_name: draftCardName.trim() || undefined,
+      barcode_number: draftBarcodeNumber.trim(),
+      customer_number: draftCustomerNumber.trim() || undefined,
+      format: draftFormat,
+      color: draftColor,
     });
-    isEditing = false;
-  }
-
-  function cancelEdit() {
-    editStoreName = card.store_name;
-    editCardName = card.card_name || "";
-    editBarcodeNumber = card.barcode_number;
-    editCustomerNumber = card.customer_number || "";
-    editFormat = card.format;
-    editColor = card.color || getDeterministicColor(card.store_name);
     isEditing = false;
   }
 
   function changeFormat(e: Event) {
     const newFormat = (e.target as HTMLSelectElement).value as BarcodeFormat;
-    cardsStore.update((cards) => {
-      const newCards = [...cards];
-      newCards[index] = { ...card, format: newFormat };
-      return newCards;
-    });
+    cardStore.update(card.id, { format: newFormat });
   }
 </script>
 
 <div class="dark-overlay">
   {#if isEditing}
-    <div class="barcode-card">
+    <div class="barcode-card edit-card">
       <h2 style="margin: 0 0 8px 0;">Edit Card</h2>
 
       <CardForm
-        bind:storeName={editStoreName}
-        bind:cardName={editCardName}
-        bind:barcodeNumber={editBarcodeNumber}
-        bind:customerNumber={editCustomerNumber}
-        bind:format={editFormat}
-        bind:color={editColor}
+        bind:storeName={draftStoreName}
+        bind:cardName={draftCardName}
+        bind:barcodeNumber={draftBarcodeNumber}
+        bind:customerNumber={draftCustomerNumber}
+        bind:format={draftFormat}
+        bind:color={draftColor}
       />
 
       <div style="margin-top: 16px; display: flex; gap: 10px; width: 100%;">
@@ -211,8 +159,7 @@
   {:else}
     <div
       class="barcode-card"
-      style="border-top: 6px solid {card.color ||
-        getDeterministicColor(card.store_name)};"
+      style="border-top: 6px solid {card.color};"
     >
       <h1 class="store-heading">{card.card_name || card.store_name}</h1>
       {#if card.card_name}
@@ -223,31 +170,16 @@
       {/if}
 
       <select id="formatSelector" value={card.format} onchange={changeFormat}>
-        <option value="CODE128">Code 128 (Standard)</option>
-        <option value="EAN13">EAN-13 (Supermarkets)</option>
-        <option value="UPC">UPC (12 digits)</option>
-        <option value="QR">QR Code</option>
+        {#each SUPPORTED_FORMATS as fmt}
+          <option value={fmt.value}>{fmt.label}</option>
+        {/each}
       </select>
 
-      {#if formatError}
-        <div id="barcodeError">{formatError}</div>
-      {/if}
-
-      {#key renderKey}
-        <div class="barcode-wrapper">
-          {#if card.format === "QR"}
-            <canvas id="qrcode" use:renderQR={card.barcode_number}></canvas>
-          {:else}
-            <svg
-              id="barcode"
-              use:renderBarcode={{
-                number: card.barcode_number,
-                format: card.format,
-              }}
-            ></svg>
-          {/if}
-        </div>
-      {/key}
+      <BarcodeView
+        value={card.barcode_number}
+        format={card.format}
+        redrawTrigger={renderKey}
+      />
 
       <div class="brightness-nudge">
         <Sun size={16} />
@@ -274,7 +206,7 @@
         </div>
       {:else}
         <div class="card-action-row">
-          <button class="subtle-btn" onclick={() => (isEditing = true)}>
+          <button class="subtle-btn" onclick={startEdit}>
             <Edit3 size={16} /> Edit
           </button>
           <button
@@ -331,6 +263,11 @@
     flex-shrink: 0;
   }
 
+  .edit-card {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
   .store-heading {
     margin: 0;
     font-size: 1.4rem;
@@ -363,36 +300,6 @@
     color: #334155;
     font-size: 0.85rem;
     margin-bottom: 12px;
-  }
-
-  #barcodeError {
-    color: #ef4444;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-    text-align: center;
-  }
-
-  .barcode-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #ffffff;
-    padding: 8px 0;
-    min-height: 140px;
-    transform: translateZ(0);
-    will-change: transform;
-  }
-
-  #barcode {
-    width: 100%;
-    height: auto;
-  }
-
-  #qrcode {
-    max-width: 100%;
-    height: auto;
   }
 
   .brightness-nudge {

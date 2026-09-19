@@ -42,6 +42,17 @@ export const REGIONS: Record<string, RegionConfig> = {
   },
 };
 
+export const QUICK_PALETTE = [
+  "#5853bf",
+  "#f05123",
+  "#1c2b4c",
+  "#ea5b0c",
+  "#007837",
+  "#0d5257",
+  "#4f46e5",
+  "#000000",
+];
+
 export function getDeterministicColor(str: string): string {
   const palette = [
     "#4f46e5",

@@ -1,15 +1,15 @@
 <!-- src/components/Settings.svelte -->
 <script lang="ts">
-  import { Download, Upload, X, Globe, Moon } from "@lucide/svelte";
-  import { cardsStore, regionStore, themeStore, migrateCards } from "../store";
+  import { Download, Upload, Globe, Moon } from "@lucide/svelte";
+  import BottomSheet from "./BottomSheet.svelte";
+  import { cardStore, regionStore, themeStore, migrateCards } from "../store";
   import { REGIONS } from "../presets";
 
   let { onclose } = $props<{
     onclose: () => void;
   }>();
 
-  const version =
-    typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.2.2";
+  const version = __APP_VERSION__;
 
   let fileInput = $state<HTMLInputElement | null>(null);
 
@@ -17,7 +17,7 @@
     const date = new Date().toISOString().split("T")[0];
     const dataStr =
       "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify($cardsStore));
+      encodeURIComponent(JSON.stringify(cardStore.items));
 
     const dl = document.createElement("a");
     dl.setAttribute("href", dataStr);
@@ -37,7 +37,7 @@
         if (evt.target?.result) {
           const parsed = JSON.parse(evt.target.result as string);
           const upgraded = migrateCards(parsed);
-          cardsStore.set(upgraded);
+          cardStore.replace(upgraded);
           alert("Backup restored and upgraded successfully!");
           onclose();
         }
@@ -50,75 +50,61 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="sheet-backdrop"
-  onclick={(e) => e.target === e.currentTarget && onclose()}
->
-  <div class="sheet-panel">
-    <div class="sheet-header">
-      <h3>Settings</h3>
-      <button class="close-btn" onclick={onclose} aria-label="Close">
-        <X size={20} />
-      </button>
-    </div>
-
-    <div class="setting-group">
-      <label for="themeSelect" class="setting-label">
-        <Moon size={15} />
-        <span>Theme Preference</span>
-      </label>
-      <select id="themeSelect" class="setting-select" bind:value={$themeStore}>
-        <option value="system">System Default</option>
-        <option value="light">Light Mode</option>
-        <option value="dark">Dark Mode</option>
-      </select>
-    </div>
-
-    <div class="setting-group">
-      <label for="regionSelect" class="setting-label">
-        <Globe size={15} />
-        <span>Brand Catalog Region</span>
-      </label>
-      <select
-        id="regionSelect"
-        class="setting-select"
-        bind:value={$regionStore}
-      >
-        {#each Object.values(REGIONS) as region}
-          <option value={region.regionCode}>
-            {region.regionName} ({region.regionCode})
-          </option>
-        {/each}
-      </select>
-    </div>
-
-    <div class="actions-group">
-      <button class="btn btn-outline" onclick={backupCards}>
-        <Download size={18} />
-        Backup to File
-      </button>
-
-      <button class="btn btn-outline" onclick={() => fileInput?.click()}>
-        <Upload size={18} />
-        Restore from File
-      </button>
-    </div>
-
-    <input
-      type="file"
-      bind:this={fileInput}
-      onchange={handleFile}
-      style="display:none"
-      accept=".json"
-    />
-
-    <p class="version-tag">
-      App Version: <strong>v{version}</strong>
-    </p>
+<BottomSheet title="Settings" {onclose}>
+  <div class="setting-group">
+    <label for="themeSelect" class="setting-label">
+      <Moon size={15} />
+      <span>Theme Preference</span>
+    </label>
+    <select id="themeSelect" class="setting-select" bind:value={themeStore.current}>
+      <option value="system">System Default</option>
+      <option value="light">Light Mode</option>
+      <option value="dark">Dark Mode</option>
+    </select>
   </div>
-</div>
+
+  <div class="setting-group">
+    <label for="regionSelect" class="setting-label">
+      <Globe size={15} />
+      <span>Brand Catalog Region</span>
+    </label>
+    <select
+      id="regionSelect"
+      class="setting-select"
+      bind:value={regionStore.current}
+    >
+      {#each Object.values(REGIONS) as region}
+        <option value={region.regionCode}>
+          {region.regionName} ({region.regionCode})
+        </option>
+      {/each}
+    </select>
+  </div>
+
+  <div class="actions-group">
+    <button class="btn btn-outline" onclick={backupCards}>
+      <Download size={18} />
+      Backup to File
+    </button>
+
+    <button class="btn btn-outline" onclick={() => fileInput?.click()}>
+      <Upload size={18} />
+      Restore from File
+    </button>
+  </div>
+
+  <input
+    type="file"
+    bind:this={fileInput}
+    onchange={handleFile}
+    style="display:none"
+    accept=".json"
+  />
+
+  <p class="version-tag">
+    App Version: <strong>v{version}</strong>
+  </p>
+</BottomSheet>
 
 <style>
   .setting-group {

@@ -2,12 +2,10 @@
 <script lang="ts">
   import { GripVertical, Search, X } from "@lucide/svelte";
   import Sortable from "sortablejs";
-  import { cardsStore } from "../store";
-  import { getDeterministicColor } from "../presets";
-  import type { Card } from "../types";
+  import { cardStore } from "../store";
 
   let { onopenCard } = $props<{
-    onopenCard: (detail: { card: Card; index: number }) => void;
+    onopenCard: (cardId: string) => void;
   }>();
 
   let query = $state("");
@@ -15,37 +13,31 @@
 
   let isSearching = $derived(query.trim().length > 0);
 
-  // Filter cards and preserve each item's true index in $cardsStore
   let filtered = $derived(
-    $cardsStore
-      .map((card, originalIndex) => ({ card, originalIndex }))
-      .filter(({ card }) => {
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          card.store_name.toLowerCase().includes(q) ||
-          (card.card_name && card.card_name.toLowerCase().includes(q)) ||
-          card.barcode_number.includes(q)
-        );
-      }),
+    cardStore.items.filter((card) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        card.store_name.toLowerCase().includes(q) ||
+        (card.card_name && card.card_name.toLowerCase().includes(q)) ||
+        card.barcode_number.includes(q)
+      );
+    }),
   );
 
   // Disable drag reordering while actively searching to prevent index bugs
   $effect(() => {
-    if (!listElement || isSearching) return;
+    if (!listElement) return;
 
     const sortable = Sortable.create(listElement, {
       handle: ".grab-handle",
       animation: 150,
       ghostClass: "sortable-ghost",
+      disabled: isSearching,
       onEnd: (evt) => {
+        if (isSearching) return;
         if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
-        cardsStore.update((cards) => {
-          const newCards = [...cards];
-          const [movedCard] = newCards.splice(evt.oldIndex as number, 1);
-          newCards.splice(evt.newIndex as number, 0, movedCard);
-          return newCards;
-        });
+        cardStore.reorder(evt.oldIndex, evt.newIndex);
       },
     });
 
@@ -53,7 +45,7 @@
   });
 </script>
 
-{#if $cardsStore.length > 0}
+{#if cardStore.items.length > 0}
   <div class="search-bar">
     <Search size={18} class="search-icon" />
     <input
@@ -75,15 +67,14 @@
   </div>
 {/if}
 
-{#if $cardsStore.length === 0}
+{#if cardStore.items.length === 0}
   <p class="empty-state">No cards saved yet.</p>
 {:else if filtered.length === 0}
   <p class="empty-state">No cards match "{query}".</p>
 {:else}
   <div id="cardList" bind:this={listElement}>
-    {#each filtered as { card, originalIndex } (card.barcode_number + originalIndex)}
-      {@const brandColor = card.color || getDeterministicColor(card.store_name)}
-      <div class="card" style="border-left: 6px solid {brandColor};">
+    {#each filtered as card (card.id)}
+      <div class="card" data-id={card.id} style="border-left: 6px solid {card.color};">
         {#if !isSearching}
           <div class="grab-handle" aria-label="Reorder card">
             <GripVertical size={20} />
@@ -94,9 +85,8 @@
           class="card-content"
           role="button"
           tabindex="0"
-          onclick={() => onopenCard({ card, index: originalIndex })}
-          onkeydown={(e) =>
-            e.key === "Enter" && onopenCard({ card, index: originalIndex })}
+          onclick={() => onopenCard(card.id)}
+          onkeydown={(e) => e.key === "Enter" && onopenCard(card.id)}
         >
           {#if card.card_name}
             <div class="title-with-badge">

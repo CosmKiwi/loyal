@@ -16,22 +16,7 @@
   --card-border: #e2e8f0;
 }
 
-/* System dark mode fallback (when not explicitly overridden to light) */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --bg-body: #0f172a;
-    --bg-surface: #1e293b;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --border-color: #334155;
-    --card-surface: #1e293b;
-    --card-border: rgba(255, 255, 255, 0.08);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  }
-}
-
-/* Explicit manual dark override */
+/* Dark mode theme token overrides */
 :root.dark {
   --bg-body: #0f172a;
   --bg-surface: #1e293b;
@@ -363,8 +348,7 @@ select:focus {
   color: #ffffff;
 }
 
-:root.dark .btn-dark,
-:root:not(.light) .btn-dark {
+:root.dark .btn-dark {
   background: #334155;
   color: #f8fafc;
 }
@@ -373,8 +357,7 @@ select:focus {
   background: #1e293b;
 }
 
-:root.dark .btn-dark:hover,
-:root:not(.light) .btn-dark:hover {
+:root.dark .btn-dark:hover {
   background: #475569;
 }
 
