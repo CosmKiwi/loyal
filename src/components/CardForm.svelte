@@ -2,8 +2,8 @@
 <script lang="ts">
   import { X, ChevronDown } from "@lucide/svelte";
   import { regionStore } from "../store";
-  import { REGIONS, getDeterministicColor } from "../presets";
-  import type { BarcodeFormat } from "../types";
+  import { REGIONS, QUICK_PALETTE, getDeterministicColor } from "../presets";
+  import { SUPPORTED_FORMATS, type BarcodeFormat } from "../types";
 
   let {
     storeName = $bindable(""),
@@ -23,19 +23,8 @@
 
   let showPresets = $state(false);
 
-  const quickPalette = [
-    "#5853bf",
-    "#f05123",
-    "#1c2b4c",
-    "#ea5b0c",
-    "#007837",
-    "#0d5257",
-    "#4f46e5",
-    "#000000",
-  ];
-
   let currentBrands = $derived(
-    REGIONS[$regionStore]?.brands ?? REGIONS["NZ"].brands,
+    REGIONS[regionStore.current]?.brands ?? REGIONS["NZ"].brands,
   );
 
   let filteredBrands = $derived(
@@ -148,10 +137,9 @@
 
   <div class="meta-row">
     <select bind:value={format} class="format-dropdown">
-      <option value="CODE128">Code 128 (Standard)</option>
-      <option value="EAN13">EAN-13 (Supermarkets)</option>
-      <option value="UPC">UPC (12 digits)</option>
-      <option value="QR">QR Code</option>
+      {#each SUPPORTED_FORMATS as fmt}
+        <option value={fmt.value}>{fmt.label}</option>
+      {/each}
     </select>
 
     <label
@@ -168,7 +156,7 @@
   </div>
 
   <div class="palette-strip">
-    {#each quickPalette as c}
+    {#each QUICK_PALETTE as c}
       <button
         type="button"
         class="palette-bubble"

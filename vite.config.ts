@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,png,svg,json,svelte}"],
+        globPatterns: ["**/*.{js,css,html,png,svg,json}"],
       },
     }),
   ],

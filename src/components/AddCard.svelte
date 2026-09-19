@@ -1,9 +1,10 @@
 <!-- src/components/AddCard.svelte -->
 <script lang="ts">
-  import { Camera, X, AlertCircle } from "@lucide/svelte";
+  import { Camera, AlertCircle } from "@lucide/svelte";
   import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+  import BottomSheet from "./BottomSheet.svelte";
   import CardForm from "./CardForm.svelte";
-  import { cardsStore } from "../store";
+  import { cardStore } from "../store";
   import { getDeterministicColor } from "../presets";
   import type { BarcodeFormat } from "../types";
 
@@ -40,7 +41,7 @@
       .then(() => {
         isRunning = true;
       })
-      .catch((err) => {
+      .catch(() => {
         isRunning = false;
         isScanning = false;
         scanError = "Camera not available. Please enter details manually.";
@@ -69,84 +70,81 @@
       return;
     }
 
-    cardsStore.update((cards) => [
-      ...cards,
-      {
-        store_name: storeName.trim(),
-        card_name: cardName.trim() || undefined,
-        barcode_number: barcodeNumber.trim(),
-        customer_number: customerNumber.trim() || undefined,
-        format,
-        color: color || getDeterministicColor(storeName.trim()),
-      },
-    ]);
+    cardStore.add({
+      store_name: storeName.trim(),
+      card_name: cardName.trim() || undefined,
+      barcode_number: barcodeNumber.trim(),
+      customer_number: customerNumber.trim() || undefined,
+      format,
+      color: color || getDeterministicColor(storeName.trim()),
+    });
 
     onclose();
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="sheet-backdrop"
-  onclick={(e) => e.target === e.currentTarget && onclose()}
->
-  <div class="sheet-panel">
-    <div class="sheet-header">
-      <h3>Add New Card</h3>
-      <button class="close-btn" onclick={onclose} aria-label="Close">
-        <X size={20} />
+<BottomSheet title="Add New Card" {onclose}>
+  {#if scanError}
+    <div class="scan-error-badge">
+      <AlertCircle size={16} />
+      <span>{scanError}</span>
+    </div>
+  {/if}
+
+  {#if !isScanning}
+    <button
+      class="btn btn-dark"
+      onclick={() => {
+        scanError = "";
+        isScanning = true;
+      }}
+    >
+      <Camera size={18} />
+      Scan Card
+    </button>
+  {/if}
+
+  {#if isScanning}
+    <div id="scanner-container" style="margin: 12px 0;">
+      <div
+        id="reader"
+        bind:this={scannerRef}
+        style="border-radius: 8px; overflow: hidden;"
+      ></div>
+      <button
+        class="btn btn-danger"
+        style="margin-top: 10px;"
+        onclick={() => (isScanning = false)}
+      >
+        Stop Scanning
       </button>
     </div>
+  {/if}
 
-    {#if scanError}
-      <div class="scan-error-badge">
-        <AlertCircle size={16} />
-        <span>{scanError}</span>
-      </div>
-    {/if}
+  <CardForm
+    bind:storeName
+    bind:cardName
+    bind:barcodeNumber
+    bind:customerNumber
+    bind:format
+    bind:color
+  />
 
-    {#if !isScanning}
-      <button
-        class="btn btn-dark"
-        onclick={() => {
-          scanError = "";
-          isScanning = true;
-        }}
-      >
-        <Camera size={18} />
-        Scan Card
-      </button>
-    {/if}
+  <button class="btn" style="margin-top: 16px;" onclick={saveCard}>
+    Save Card
+  </button>
+</BottomSheet>
 
-    {#if isScanning}
-      <div id="scanner-container" style="margin: 12px 0;">
-        <div
-          id="reader"
-          bind:this={scannerRef}
-          style="border-radius: 8px; overflow: hidden;"
-        ></div>
-        <button
-          class="btn btn-danger"
-          style="margin-top: 10px;"
-          onclick={() => (isScanning = false)}
-        >
-          Stop Scanning
-        </button>
-      </div>
-    {/if}
-
-    <CardForm
-      bind:storeName
-      bind:cardName
-      bind:barcodeNumber
-      bind:customerNumber
-      bind:format
-      bind:color
-    />
-
-    <button class="btn" style="margin-top: 16px;" onclick={saveCard}>
-      Save Card
-    </button>
-  </div>
-</div>
+<style>
+  .scan-error-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    color: #ef4444;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+</style>
