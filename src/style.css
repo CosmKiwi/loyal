@@ -62,10 +62,14 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+body.no-scroll {
+  overflow: hidden;
+  touch-action: none;
+  height: 100dvh;
+}
+
 #app {
   min-height: 100dvh;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
 }
 
 /* --- Container & Layout --- */

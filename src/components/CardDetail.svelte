@@ -28,6 +28,14 @@
   let formatError = $state("");
   let renderKey = $state(0);
 
+  // Lock background page scroll while detail overlay is mounted
+  $effect(() => {
+    document.body.classList.add("no-scroll");
+    return () => {
+      document.body.classList.remove("no-scroll");
+    };
+  });
+
   $effect(() => {
     editStoreName = card.store_name;
     editCardName = card.card_name || "";
@@ -289,9 +297,12 @@
 <style>
   .dark-overlay {
     position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100dvh;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -301,6 +312,9 @@
     align-items: center;
     z-index: 1000;
     padding: 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 
   .barcode-card {
@@ -314,6 +328,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .store-heading {
@@ -456,6 +471,7 @@
     align-items: center;
     gap: 8px;
     transition: background 0.15s ease;
+    flex-shrink: 0;
   }
 
   .btn-back:hover {
