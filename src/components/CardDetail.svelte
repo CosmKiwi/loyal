@@ -26,7 +26,7 @@
   let editColor = $state("");
 
   let formatError = $state("");
-  let renderTrigger = $state(0);
+  let renderKey = $state(0);
 
   $effect(() => {
     editStoreName = card.store_name;
@@ -43,10 +43,14 @@
     async function requestWakeLock() {
       try {
         if ("wakeLock" in navigator && document.visibilityState === "visible") {
+          wakeLock = null;
           wakeLock = await navigator.wakeLock.request("screen");
+          wakeLock.addEventListener("release", () => {
+            wakeLock = null;
+          });
         }
       } catch (err: any) {
-        console.warn(`WakeLock failed: ${err.name}, ${err.message}`);
+        console.warn(`WakeLock failed: ${err?.name}`);
       }
     }
 
@@ -54,26 +58,32 @@
       if (wakeLock !== null) {
         try {
           await wakeLock.release();
-          wakeLock = null;
         } catch (err) {
           console.warn(err);
         }
+        wakeLock = null;
       }
     }
 
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible" && !isEditing) {
-        setTimeout(requestWakeLock, 50);
-        renderTrigger += 1;
+    function handleResume() {
+      if (document.visibilityState === "visible") {
+        if (!isEditing) {
+          renderKey += 1;
+        }
+        setTimeout(requestWakeLock, 150);
+      } else {
+        releaseWakeLock();
       }
     }
 
     requestWakeLock();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("pageshow", handleResume);
 
     return () => {
       releaseWakeLock();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("pageshow", handleResume);
     };
   });
 
@@ -215,7 +225,7 @@
         <div id="barcodeError">{formatError}</div>
       {/if}
 
-      {#key renderTrigger}
+      {#key renderKey}
         <div class="barcode-wrapper">
           {#if card.format === "QR"}
             <canvas id="qrcode" use:renderQR={card.barcode_number}></canvas>
@@ -357,6 +367,7 @@
     padding: 8px 0;
     min-height: 140px;
     transform: translateZ(0);
+    will-change: transform;
   }
 
   #barcode {
